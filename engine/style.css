@@ -91,6 +91,18 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--brass)
 @keyframes choices-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 .menu-list .seen { font-family: var(--f-mono); font-size: 11px; color: var(--muted); }
 
+/* 제시한 증거 카드: 대사창 바로 위. 무엇을 내고 이야기하는 중인지 보여 줘요 */
+.presented {
+  background: var(--panel-2); border: 1px solid var(--line); border-left: 4px solid var(--brass); border-radius: 6px;
+  padding: 10px 14px 12px; display: grid; gap: 2px;
+}
+.presented.pop { animation: present-in .3s ease-out; }
+.presented .pc-head { display: flex; justify-content: space-between; gap: 8px; font-family: var(--f-mono); font-size: 11px; letter-spacing: .12em; color: var(--brass); }
+.presented .pc-no { color: var(--muted); letter-spacing: .08em; }
+.presented .pc-name { font-family: var(--f-display); font-weight: 800; font-size: 17px; line-height: 1.4; }
+.presented .pc-desc { margin: 0; font-size: 13px; color: var(--muted); white-space: pre-wrap; max-width: 60ch; }
+@keyframes present-in { from { opacity: 0; transform: translateY(8px) scale(.97); } to { opacity: 1; transform: none; } }
+
 /* 대사창 */
 .dialog {
   background: var(--panel); border: 1px solid var(--line); border-radius: 6px;

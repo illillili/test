@@ -123,8 +123,13 @@ function step() {
 
 function exec(a) {
   switch (a.do) {
-    case "place": setPlace(a.time, a.loc); return step();
-    case "court": S.court = a.on !== false; renderHP(); return step();
+    case "place":
+      if (a.time !== $("time").textContent || a.loc !== $("loc").textContent) clearPresented();
+      setPlace(a.time, a.loc); return step();
+    case "court":
+      S.court = a.on !== false; renderHP();
+      if (!S.court) clearPresented(); /* 재판이 끝나면 제시한 증거 카드도 치워요 */
+      return step();
     case "heal": S.hp = MAX_HP; renderHP(); return step();
     case "give":
       if (!S.ev.includes(a.id)) {
@@ -252,7 +257,10 @@ function exec(a) {
       b.className = "burst" + (a.verdict ? " verdict" : "") + (a.style ? " " + a.style : "");
       o.hidden = false; shake(document.querySelector(".stage"));
       idleLine("");
-      o.onclick = () => { o.hidden = true; step(); };
+      /* 제시한 증거 카드는 외침이 끝난 뒤에 나타나요 */
+      const pc = $("presented"), wait = !pc.hidden;
+      if (wait) pc.hidden = true;
+      o.onclick = () => { o.hidden = true; if (wait) revealPresented(); step(); };
       return;
     }
     default: return step();
@@ -331,6 +339,7 @@ function lockedTopic(sc) {
 function showInvestigate(tab) {
   const sc = SCENES[S.scene];
   S.keepMid = false;
+  clearPresented();
   checkpoint();
   S.idle = "inv";
   idleLine(sc.idle);
@@ -423,6 +432,7 @@ function psycheStep() {
 }
 
 function psycheAsk() {
+  clearPresented();
   S.idle = "psyche";
   $("hint").hidden = true; $("dialog").classList.add("idle");
   const c = $("controls"); c.innerHTML = "";
@@ -487,6 +497,7 @@ function startTestimony(sc) {
 function showStatement() {
   const sc = SCENES[S.scene], st = sc.statements[S.stmt];
   const vis = visibleStatements(sc), pos = vis.indexOf(S.stmt);
+  clearPresented();
   S.idle = "cross";
   const mid = $("middle");
   mid.innerHTML = `<div class="ce-banner"><span></span><span class="count">증언 ${pos + 1} / ${vis.length}</span></div>`;
@@ -604,18 +615,41 @@ function renderRecord() {
   const go_ = R.querySelector('[data-act="present"]');
   if (go_) go_.onclick = () => {
     const id = S.recordSel, cb = S.presentCb;
-    closeRecord();
+    closeRecord(); clearPresented();
     const name = (EVIDENCE[id] || PEOPLE[id]).name;
     const raise = id === CONFIG.magatama && cb === invPresent && lockedTopic(SCENES[S.scene]);
     const line = ["", `〈${name}〉${josa(name, "을를")} ${raise ? "꺼내 들었다." : "제시했다."}`];
     /* [제시 대사]는 법정에서만 (증언 신문 중, 또는 [법정 시작] 뒤). 조사·사이코록에서는 담백하게 한 줄만 */
     const inCourt = (S.court && !S.lock) || (SCENES[S.scene] && SCENES[S.scene].type === "testimony");
-    run(inCourt ? [[CONFIG.hero, CONFIG.presentLine], line] : [line], () => cb(id));
+    run(inCourt ? [[CONFIG.hero, CONFIG.presentLine], line] : [line], () => { showPresented(id); cb(id); });
   };
 }
 
+/* ---------- 제시한 증거 카드 ----------
+   증거(또는 인물 파일)를 제시하면, 그 반응 대사가 이어지는 동안 대사창 바로 위에 내용을 보여 줘요.
+   반응이 [외침]으로 시작하면 외침이 끝난 뒤에 나타나요.
+   신문·조사 메뉴로 돌아오거나, 장소가 바뀌거나, [법정 끝]이 나오면 사라져요. */
+function showPresented(id) {
+  const it = EVIDENCE[id] || PEOPLE[id], box = $("presented");
+  if (!it) return;
+  box.innerHTML = `<div class="pc-head"><span class="pc-label"></span><span class="pc-no"></span></div><div class="pc-name"></div><p class="pc-desc"></p>`;
+  box.querySelector(".pc-label").textContent = PEOPLE[id] ? "제시한 인물" : "제시한 증거품";
+  box.querySelector(".pc-no").textContent = it.no || "";
+  box.querySelector(".pc-name").textContent = it.name;
+  setRich(box.querySelector(".pc-desc"), it.desc);
+  revealPresented();
+}
+function revealPresented() {
+  const box = $("presented");
+  if (!box.firstChild) return;
+  box.hidden = false;
+  box.classList.remove("pop"); void box.offsetWidth; box.classList.add("pop");
+}
+function clearPresented() { const box = $("presented"); box.hidden = true; box.innerHTML = ""; }
+
 /* ---------- 끝 카드 ---------- */
 function showEnd(sc) {
+  clearPresented();
   S.idle = "end";
   idleLine("");
   $("controls").innerHTML = "";
@@ -646,6 +680,7 @@ function showEnd(sc) {
 }
 
 function freshState(ev, people) {
+  clearPresented();
   restoreDescs({}, {});
   Object.assign(S, { test: false, ev, people, fresh: new Set(), seen: new Set(), shown: new Set(), hp: MAX_HP, court: false, stmt: 0, unlocked: new Set(), lock: null, keepMid: false, descs: {}, names: {}, placeAt: {}, gameover: false });
   setPlace("", ""); renderHP(); markRecord();
@@ -701,6 +736,7 @@ function restore(d, msg = "불러왔다.") {
   clearInterval(S.typeTimer);
   S.queue = []; S.onDone = null;
   $("objection").hidden = true; $("record").hidden = true; $("menu").hidden = true;
+  clearPresented();
   restoreDescs(d.descs, d.names);
   Object.assign(S, {
     ev: d.ev.filter(n => EVIDENCE[n] || PEOPLE[n]), people: (d.people || []).filter(n => PEOPLE[n]),
@@ -874,6 +910,7 @@ function showTitle() {
   clearInterval(S.typeTimer);
   S.queue = []; S.onDone = null; S.scene = null; S.checkpoint = null; S.idle = "title";
   S.court = false; S.lock = null; S.gameover = false; renderHP();
+  clearPresented();
   setPlace("", ""); idleLine("");
   $("controls").innerHTML = "";
   const auto = store.get(KEY_AUTO());
