@@ -27,7 +27,7 @@ const MARKERS = { "다시 볼 때": "again", "조건 미달": "need", "정답일
 const VISIT_MARKERS = { "처음 올 때": "first", "다시 올 때": "revisit" };
 /* [제시 요구] 안에서 정답/오답 대사를 나누는 표시 */
 const DEMAND_MARKERS = ["정답일 때", "그럴듯할 때", "틀렸을 때", "틀리면 넘어감"];
-const COMMANDS = ["장소", "증거", "인물", "증거갱신", "인물갱신", "흔들기", "외침", "판결", "해제", "법정 시작", "법정 끝", "회복", "신뢰도", "자물쇠 표시", "이동", "선택", "선택 끝", "선택2", "선택2 끝", "오답", "제시 요구", "제시 요구 끝", "증거 삭제", "증거 이름 변경", "증언 추가", "증언 수정", "질문 추가"];
+const COMMANDS = ["장소", "증거", "인물", "증거갱신", "인물갱신", "흔들기", "외침", "판결", "해제", "법정 시작", "법정 끝", "회복", "신뢰도", "자물쇠 표시", "이동", "선택", "선택 끝", "선택2", "선택2 끝", "오답", "제시 요구", "제시 요구 끝", "증거 삭제", "증거 이름 변경", "증언 추가", "증언 수정", "질문 추가", "표시", "표시 해제"];
 const TYPES = { "대화": "dialog", "조사": "investigate", "증언": "testimony", "사이코록": "lock", "엔딩": "end" };
 const RESERVED = ["설정", "등장인물", "증거", "인물파일"];
 
@@ -302,6 +302,18 @@ function buildGame(files) {
           if (!list[canon(n)]) err(at, isEv ? `증거 '${n}'이(가) 증거 목록에 없어요.` : `인물 '${n}'이(가) 인물 파일에 없어요.`);
           else if (!d) err(at, `[${cmd}] ${what} 이름 | 새 설명 모양으로 적어 주세요.`);
           else out.push({ do: "update", id: canon(n), desc: br(d) });
+          break;
+        }
+        case "표시":
+        case "표시 해제":
+        case "표시해제": {
+          /* [표시] 이름: 증거 카드를 위쪽에 띄움 / [표시 해제] 이름: 그 카드만 내림 (이름 없으면 전부). 여러 개면 쉼표로 */
+          const names = split(v), ids = [];
+          names.forEach(n => { if (!isThing(n)) err(at, `[${cmd}] '${n}'이(가) 증거나 인물 파일에 없어요.`); else ids.push(canon(n)); });
+          if (cmd === "표시") {
+            if (!names.length) err(at, "[표시] 뒤에 보여 줄 증거(또는 인물) 이름을 적어 주세요. 여러 개면 쉼표로.");
+            else if (ids.length) out.push({ do: "card", ids });
+          } else if (!names.length || ids.length) out.push({ do: "uncard", ids });
           break;
         }
         case "흔들기": out.push({ do: "shake" }); break;

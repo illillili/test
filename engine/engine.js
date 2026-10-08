@@ -14,7 +14,8 @@ const S = {
   scene: null, queue: [], onDone: null, typing: false, typeTimer: null, fullText: "",
   ev: [], people: [], fresh: new Set(), seen: new Set(), hp: 5, court: false,
   stmt: 0, idle: null, recordTab: "ev", recordSel: null, presentCb: null,
-  unlocked: new Set(), lock: null, pendingLock: null, shown: new Set(), revealed: new Set(), pressed: new Set(), revealNow: false, keepMid: false, descs: {}, names: {}, checkpoint: null, placeAt: {}, gameover: false
+  unlocked: new Set(), lock: null, pendingLock: null, shown: new Set(), revealed: new Set(), pressed: new Set(), revealNow: false, keepMid: false, descs: {}, names: {}, checkpoint: null, placeAt: {}, gameover: false,
+  cards: [], cardsAt: {}
 };
 
 function setPlace(time, loc) {
@@ -123,13 +124,8 @@ function step() {
 
 function exec(a) {
   switch (a.do) {
-    case "place":
-      if (a.time !== $("time").textContent || a.loc !== $("loc").textContent) clearPresented();
-      setPlace(a.time, a.loc); return step();
-    case "court":
-      S.court = a.on !== false; renderHP();
-      if (!S.court) clearPresented(); /* 재판이 끝나면 제시한 증거 카드도 치워요 */
-      return step();
+    case "place": setPlace(a.time, a.loc); return step();
+    case "court": S.court = a.on !== false; renderHP(); return step();
     case "heal": S.hp = MAX_HP; renderHP(); return step();
     case "give":
       if (!S.ev.includes(a.id)) {
@@ -139,7 +135,7 @@ function exec(a) {
       return step();
     case "update": {
       const it = EVIDENCE[a.id] || PEOPLE[a.id];
-      it.desc = a.desc; S.descs[a.id] = a.desc; S.fresh.add(a.id); markRecord();
+      it.desc = a.desc; S.descs[a.id] = a.desc; S.fresh.add(a.id); markRecord(); renderCards();
       S.queue.unshift(["", PEOPLE[a.id] ? `법정기록의 〈${it.name}〉 인물 파일이 갱신되었다.` : `법정기록의 〈${it.name}〉 내용이 갱신되었다.`]);
       return step();
     }
@@ -155,7 +151,7 @@ function exec(a) {
       /* [증거 이름 변경]: 가지고 있지 않아도 이름은 바뀌어요 (나중에 얻으면 새 이름으로) */
       const it = EVIDENCE[a.id] || PEOPLE[a.id], old = it.name;
       if (old === a.name) return step();
-      it.name = a.name; S.names[a.id] = a.name;
+      it.name = a.name; S.names[a.id] = a.name; renderCards();
       if (S.ev.includes(a.id) || S.people.includes(a.id)) {
         S.fresh.add(a.id); markRecord();
         S.queue.unshift(["", `법정기록의 〈${old}〉${josa(old, "이가")} 〈${a.name}〉${josaRo(a.name)} 바뀌었다.`]);
@@ -167,6 +163,17 @@ function exec(a) {
         S.people.push(a.id); S.fresh.add(a.id); markRecord();
         S.queue.unshift(["", `법정기록에 〈${PEOPLE[a.id].name}〉의 인물 파일을 추가했다.`]);
       }
+      return step();
+    case "card": {
+      /* [표시]: 증거 카드를 위쪽에 띄워요. 이미 떠 있는 카드는 자리 그대로 */
+      const added = a.ids.filter(id => !S.cards.includes(id));
+      S.cards.push(...added); renderCards(added);
+      return step();
+    }
+    case "uncard":
+      /* [표시 해제]: 이름을 적으면 그 카드만, 안 적으면 전부 */
+      S.cards = a.ids.length ? S.cards.filter(id => !a.ids.includes(id)) : [];
+      renderCards();
       return step();
     case "shake": shake(document.querySelector(".stage")); return step();
     case "hp":
@@ -257,10 +264,7 @@ function exec(a) {
       b.className = "burst" + (a.verdict ? " verdict" : "") + (a.style ? " " + a.style : "");
       o.hidden = false; shake(document.querySelector(".stage"));
       idleLine("");
-      /* 제시한 증거 카드는 외침이 끝난 뒤에 나타나요 */
-      const pc = $("presented"), wait = !pc.hidden;
-      if (wait) pc.hidden = true;
-      o.onclick = () => { o.hidden = true; if (wait) revealPresented(); step(); };
+      o.onclick = () => { o.hidden = true; step(); };
       return;
     }
     default: return step();
@@ -307,6 +311,7 @@ function go(id) {
   }
   S.scene = id; S.keepMid = false;
   S.placeAt[id] = [$("time").textContent, $("loc").textContent];
+  S.cardsAt[id] = S.cards.slice();
   recordChapter(id, from);
   checkpoint();
   if (sc.type === "dialog") run(sc.lines, () => sc.next ? go(sc.next) : toast("다음 장면이 정해져 있지 않아요."));
@@ -339,7 +344,6 @@ function lockedTopic(sc) {
 function showInvestigate(tab) {
   const sc = SCENES[S.scene];
   S.keepMid = false;
-  clearPresented();
   checkpoint();
   S.idle = "inv";
   idleLine(sc.idle);
@@ -432,7 +436,6 @@ function psycheStep() {
 }
 
 function psycheAsk() {
-  clearPresented();
   S.idle = "psyche";
   $("hint").hidden = true; $("dialog").classList.add("idle");
   const c = $("controls"); c.innerHTML = "";
@@ -497,7 +500,6 @@ function startTestimony(sc) {
 function showStatement() {
   const sc = SCENES[S.scene], st = sc.statements[S.stmt];
   const vis = visibleStatements(sc), pos = vis.indexOf(S.stmt);
-  clearPresented();
   S.idle = "cross";
   const mid = $("middle");
   mid.innerHTML = `<div class="ce-banner"><span></span><span class="count">증언 ${pos + 1} / ${vis.length}</span></div>`;
@@ -565,6 +567,24 @@ function markRecord() {
   if (!S.fresh.size) btn.querySelector(".dot")?.remove();
 }
 
+/* ---------- 증거 카드 ([표시] / [표시 해제]) ----------
+   위쪽부터 차례대로 쌓여요. pop 에 든 카드만 나타나는 움직임을 보여 줘요. */
+function renderCards(pop = []) {
+  const box = $("cards");
+  box.innerHTML = "";
+  S.cards.forEach(id => {
+    const it = EVIDENCE[id] || PEOPLE[id]; if (!it) return;
+    const c = document.createElement("div");
+    c.className = "pcard" + (pop.includes(id) ? " pop" : "");
+    c.innerHTML = `<div class="pc-head"><span class="pc-name"></span><span class="pc-no"></span></div><p class="pc-desc"></p>`;
+    c.querySelector(".pc-name").textContent = it.name;
+    c.querySelector(".pc-no").textContent = it.no || "";
+    setRich(c.querySelector(".pc-desc"), it.desc);
+    box.appendChild(c);
+  });
+  box.hidden = !box.children.length;
+}
+
 function openRecord(cb) {
   S.presentCb = typeof cb === "function" ? cb : null;
   S.recordTab = "ev"; S.recordSel = null;
@@ -615,41 +635,19 @@ function renderRecord() {
   const go_ = R.querySelector('[data-act="present"]');
   if (go_) go_.onclick = () => {
     const id = S.recordSel, cb = S.presentCb;
-    closeRecord(); clearPresented();
+    closeRecord();
     const name = (EVIDENCE[id] || PEOPLE[id]).name;
     const raise = id === CONFIG.magatama && cb === invPresent && lockedTopic(SCENES[S.scene]);
     const line = ["", `〈${name}〉${josa(name, "을를")} ${raise ? "꺼내 들었다." : "제시했다."}`];
     /* [제시 대사]는 법정에서만 (증언 신문 중, 또는 [법정 시작] 뒤). 조사·사이코록에서는 담백하게 한 줄만 */
     const inCourt = (S.court && !S.lock) || (SCENES[S.scene] && SCENES[S.scene].type === "testimony");
-    run(inCourt ? [[CONFIG.hero, CONFIG.presentLine], line] : [line], () => { showPresented(id); cb(id); });
+    run(inCourt ? [[CONFIG.hero, CONFIG.presentLine], line] : [line], () => cb(id));
   };
 }
 
-/* ---------- 제시한 증거 카드 ----------
-   증거(또는 인물 파일)를 제시하면, 그 반응 대사가 이어지는 동안 대사창 바로 위에 내용을 보여 줘요.
-   반응이 [외침]으로 시작하면 외침이 끝난 뒤에 나타나요.
-   신문·조사 메뉴로 돌아오거나, 장소가 바뀌거나, [법정 끝]이 나오면 사라져요. */
-function showPresented(id) {
-  const it = EVIDENCE[id] || PEOPLE[id], box = $("presented");
-  if (!it) return;
-  box.innerHTML = `<div class="pc-head"><span class="pc-label"></span><span class="pc-no"></span></div><div class="pc-name"></div><p class="pc-desc"></p>`;
-  box.querySelector(".pc-label").textContent = PEOPLE[id] ? "제시한 인물" : "제시한 증거품";
-  box.querySelector(".pc-no").textContent = it.no || "";
-  box.querySelector(".pc-name").textContent = it.name;
-  setRich(box.querySelector(".pc-desc"), it.desc);
-  revealPresented();
-}
-function revealPresented() {
-  const box = $("presented");
-  if (!box.firstChild) return;
-  box.hidden = false;
-  box.classList.remove("pop"); void box.offsetWidth; box.classList.add("pop");
-}
-function clearPresented() { const box = $("presented"); box.hidden = true; box.innerHTML = ""; }
-
 /* ---------- 끝 카드 ---------- */
 function showEnd(sc) {
-  clearPresented();
+  $("cards").hidden = true; /* 엔딩 카드만 보이게. "다시 도전"하면 그 장면에 들어갈 때의 카드로 돌아와요 */
   S.idle = "end";
   idleLine("");
   $("controls").innerHTML = "";
@@ -665,6 +663,7 @@ function showEnd(sc) {
     r.onclick = () => {
       S.hp = MAX_HP; S.gameover = false; renderHP();
       const pl = S.placeAt[retry]; if (pl) setPlace(pl[0], pl[1]);
+      S.cards = (S.cardsAt[retry] || []).slice(); renderCards();
       go(retry);
     };
     acts.appendChild(r);
@@ -680,10 +679,9 @@ function showEnd(sc) {
 }
 
 function freshState(ev, people) {
-  clearPresented();
   restoreDescs({}, {});
-  Object.assign(S, { test: false, ev, people, fresh: new Set(), seen: new Set(), shown: new Set(), hp: MAX_HP, court: false, stmt: 0, unlocked: new Set(), lock: null, keepMid: false, descs: {}, names: {}, placeAt: {}, gameover: false });
-  setPlace("", ""); renderHP(); markRecord();
+  Object.assign(S, { test: false, ev, people, fresh: new Set(), seen: new Set(), shown: new Set(), hp: MAX_HP, court: false, stmt: 0, unlocked: new Set(), lock: null, keepMid: false, descs: {}, names: {}, placeAt: {}, gameover: false, cards: [], cardsAt: {} });
+  setPlace("", ""); renderHP(); markRecord(); renderCards();
 }
 
 function reset() {
@@ -709,7 +707,8 @@ function snapshot() {
     game: GAME_ID, v: SAVE_VER, savedAt: Date.now(),
     scene: S.scene, time: $("time").textContent, loc: $("loc").textContent,
     ev: [...S.ev], people: [...S.people], fresh: [...S.fresh], seen: [...S.seen], shown: [...S.shown],
-    hp: S.hp, court: S.court, unlocked: [...S.unlocked], descs: { ...S.descs }, names: { ...S.names }, placeAt: { ...S.placeAt }
+    hp: S.hp, court: S.court, unlocked: [...S.unlocked], descs: { ...S.descs }, names: { ...S.names }, placeAt: { ...S.placeAt },
+    cards: [...S.cards], cardsAt: { ...S.cardsAt }
   };
 }
 
@@ -736,15 +735,15 @@ function restore(d, msg = "불러왔다.") {
   clearInterval(S.typeTimer);
   S.queue = []; S.onDone = null;
   $("objection").hidden = true; $("record").hidden = true; $("menu").hidden = true;
-  clearPresented();
   restoreDescs(d.descs, d.names);
   Object.assign(S, {
     ev: d.ev.filter(n => EVIDENCE[n] || PEOPLE[n]), people: (d.people || []).filter(n => PEOPLE[n]),
     fresh: new Set(d.fresh || []), seen: new Set(d.seen || []), shown: new Set(d.shown || []),
     hp: typeof d.hp === "number" ? d.hp : MAX_HP, court: !!d.court, unlocked: new Set(d.unlocked || []),
-    descs: { ...(d.descs || {}) }, names: { ...(d.names || {}) }, placeAt: { ...(d.placeAt || {}) }, lock: null, keepMid: false, stmt: 0, gameover: false, test: false
+    descs: { ...(d.descs || {}) }, names: { ...(d.names || {}) }, placeAt: { ...(d.placeAt || {}) },
+    cards: (d.cards || []).filter(n => EVIDENCE[n] || PEOPLE[n]), cardsAt: { ...(d.cardsAt || {}) }, lock: null, keepMid: false, stmt: 0, gameover: false, test: false
   });
-  setPlace(d.time, d.loc); renderHP(); markRecord();
+  setPlace(d.time, d.loc); renderHP(); markRecord(); renderCards();
   S.scene = d.scene; S.checkpoint = d;
   go(resumeTarget(d));
   toast(msg);
@@ -910,7 +909,7 @@ function showTitle() {
   clearInterval(S.typeTimer);
   S.queue = []; S.onDone = null; S.scene = null; S.checkpoint = null; S.idle = "title";
   S.court = false; S.lock = null; S.gameover = false; renderHP();
-  clearPresented();
+  S.cards = []; renderCards();
   setPlace("", ""); idleLine("");
   $("controls").innerHTML = "";
   const auto = store.get(KEY_AUTO());

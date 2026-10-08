@@ -69,6 +69,19 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--brass)
 .placard .time { font-family: var(--f-mono); font-size: 12px; color: var(--brass); letter-spacing: .06em; }
 .placard .loc { font-family: var(--f-display); font-weight: 800; font-size: clamp(20px, 5vw, 26px); line-height: 1.3; text-wrap: balance; }
 
+/* 증거 카드 ([표시]): 장소 표시 아래부터 차례대로 쌓여요 */
+.shown-cards { display: grid; gap: 8px; }
+.pcard {
+  background: var(--panel-2); border: 1px solid var(--line); border-left: 4px solid var(--brass); border-radius: 6px;
+  padding: 9px 14px 10px; display: grid; gap: 2px;
+}
+.pcard.pop { animation: card-in .3s ease-out; }
+.pcard .pc-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.pcard .pc-name { font-family: var(--f-display); font-weight: 800; font-size: 16px; line-height: 1.4; }
+.pcard .pc-no { font-family: var(--f-mono); font-size: 11px; color: var(--muted); letter-spacing: .08em; white-space: nowrap; }
+.pcard .pc-desc { margin: 0; font-size: 13px; line-height: 1.55; color: var(--muted); white-space: pre-wrap; max-width: 60ch; }
+@keyframes card-in { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
+
 /* 가운데 영역 */
 .middle { flex: 1; display: flex; flex-direction: column; justify-content: flex-end; gap: 10px; min-height: 120px; }
 .ce-banner { text-align: center; font-family: var(--f-display); font-weight: 800; color: var(--who-itono); letter-spacing: .08em; font-size: 17px; }
@@ -90,18 +103,6 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--brass)
 .choices.float button { padding: 12px 16px; text-align: center; }
 @keyframes choices-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 .menu-list .seen { font-family: var(--f-mono); font-size: 11px; color: var(--muted); }
-
-/* 제시한 증거 카드: 대사창 바로 위. 무엇을 내고 이야기하는 중인지 보여 줘요 */
-.presented {
-  background: var(--panel-2); border: 1px solid var(--line); border-left: 4px solid var(--brass); border-radius: 6px;
-  padding: 10px 14px 12px; display: grid; gap: 2px;
-}
-.presented.pop { animation: present-in .3s ease-out; }
-.presented .pc-head { display: flex; justify-content: space-between; gap: 8px; font-family: var(--f-mono); font-size: 11px; letter-spacing: .12em; color: var(--brass); }
-.presented .pc-no { color: var(--muted); letter-spacing: .08em; }
-.presented .pc-name { font-family: var(--f-display); font-weight: 800; font-size: 17px; line-height: 1.4; }
-.presented .pc-desc { margin: 0; font-size: 13px; color: var(--muted); white-space: pre-wrap; max-width: 60ch; }
-@keyframes present-in { from { opacity: 0; transform: translateY(8px) scale(.97); } to { opacity: 1; transform: none; } }
 
 /* 대사창 */
 .dialog {
