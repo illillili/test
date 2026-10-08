@@ -68,6 +68,11 @@ function parseStory(files) {
           const k = VISIT_MARKERS[key];
           scene[k] = scene[k] || []; scene.visitAt = scene.visitAt || at; target = scene[k]; return;
         }
+        /* ## 이동 블록의 [조건]은 여러 번 쓸 수 있어요. [조건]마다 그 아래 대사가 한 갈래가 돼요 */
+        if (block && key === "조건" && block.kind === "이동") {
+          if (target === block.alt) return err(at, "[조건]은 [조건 미달]보다 위에 적어 주세요.");
+          (block.conds = block.conds || []).push({ val, at, from: block.lines.length });
+        }
         if (block && BLOCK_KEYS.includes(key)) { block.settings[key] = { val, at }; return; }
         if (!block && (SCENE_KEYS.includes(key) || scene.name === "설정")) { scene.settings[key] = { val, at }; return; }
         target.push({ cmd: key, val, at }); return;
@@ -441,7 +446,8 @@ function buildGame(files) {
         const dup = b.kind === "제시" ? "제시:" + b.arg : b.kind === "이동" ? "이동:" + b.arg : "항목:" + b.arg;
         if (used[dup]) err(b.at, `'## ${b.kind}: ${b.arg}'이(가) 이 장면에 이미 있어요. (${where(used[dup])}) 하나만 남겨 주세요.`);
         else used[dup] = b.at;
-        const lines = compileLines(b.lines, ctx), alt = compileLines(b.alt, ctx);
+        /* ## 이동은 [조건]마다 갈래를 나눠서 따로 읽어요 (아래) */
+        const lines = b.kind === "이동" ? [] : compileLines(b.lines, ctx), alt = compileLines(b.alt, ctx);
         /* [숨김] 항목은 [질문 추가]가 실행되기 전까지 메뉴에 안 보여요 */
         const isHidden = !!b.settings["숨김"];
         if (isHidden) {
@@ -466,15 +472,25 @@ function buildGame(files) {
           else { if (!isThing(b.arg)) err(b.at, `'${b.arg}'이(가) 증거나 인물 파일에 없어요.`); sc.present[canon(b.arg)] = lines; }
         } else if (b.kind === "이동") {
           markerErr(b, "need");
-          if (!hasGoto(lines)) err(b.at, `'## 이동: ${b.arg}' 블록에 [이동] 장면 이름 이 필요해요.`);
-          const cond = b.settings["조건"];
-          (sc.move = sc.move || []).push({ label: b.arg, hidden: isHidden, lines, rawNeed: cond ? split(cond.val) : [], needAt: cond && cond.at, needLines: alt.length ? alt : [[config.hero, "(아직 할 일이 남아 있다.)"]] });
+          /* [조건]이 하나(또는 없음)면 블록 전체가 한 갈래. 여러 개면 [조건]부터 다음 [조건] 앞까지가 한 갈래이고,
+             게임에서는 위에서부터 조건을 다 채운 첫 갈래로 가요. 아무것도 못 채우면 [조건 미달] */
+          const conds = b.conds || [];
+          const multi = conds.length > 1;
+          if (multi && conds[0].from > 0) err(b.lines[0].at, `[조건]이 여러 개인 ## 이동 블록에서는 맨 위에 [조건]부터 적어 주세요.`);
+          const branches = (conds.length ? conds : [{ val: "", at: null }]).map((c, i) => {
+            const seg = multi ? b.lines.slice(c.from, i + 1 < conds.length ? conds[i + 1].from : b.lines.length) : b.lines;
+            const brLines = compileLines(seg, ctx);
+            if (multi && !split(c.val).length) err(c.at, `[조건] 뒤에 조건을 적어 주세요.`);
+            if (!hasGoto(brLines)) err(multi ? c.at : b.at, multi ? `이 [조건] 아래에 [이동] 장면 이름 이 필요해요. (## 이동: ${b.arg})` : `'## 이동: ${b.arg}' 블록에 [이동] 장면 이름 이 필요해요.`);
+            return { lines: brLines, rawNeed: split(c.val), needAt: c.at };
+          });
+          (sc.move = sc.move || []).push({ label: b.arg, hidden: isHidden, branches, needLines: alt.length ? alt : [[config.hero, "(아직 할 일이 남아 있다.)"]] });
         }
       }
       const labels = [...(sc.examine || []), ...(sc.talk || [])].map(x => x.id);
-      for (const mv of sc.move || []) {
-        mv.need = mv.rawNeed.map(n => resolveNeed(n, s.name, labels, mv.needAt)).filter(Boolean);
-        delete mv.rawNeed; delete mv.needAt;
+      for (const br of (sc.move || []).flatMap(mv => mv.branches)) {
+        br.need = br.rawNeed.map(n => resolveNeed(n, s.name, labels, br.needAt)).filter(Boolean);
+        delete br.rawNeed; delete br.needAt;
       }
       if (!sc.examine && !sc.talk && !sc.move) err(s.at, `'${s.name}' 조사 장면에 ## 조사, ## 대화, ## 이동 블록이 하나도 없어요.`);
       ctx.adds.forEach(a => { if (!hidden.some(h => h.name === a.name)) err(a.at, `[질문 추가] '${a.name}'은(는) 이 장면의 [숨김] 항목에 없어요. 항목 이름과 [숨김]을 확인해 주세요.`); });
