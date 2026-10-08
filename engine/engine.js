@@ -375,9 +375,9 @@ function showInvestigate(tab) {
       b.firstChild.textContent = it.label;
       b.onclick = () => {
         if (tab === "move") {
-          const missing = (it.need || []).filter(c => !needMet(c));
-          if (missing.length) run(it.needLines, () => showInvestigate("move"));
-          else run(it.lines, () => showInvestigate("move"));
+          /* 위에서부터 [조건]을 다 채운 첫 갈래로. 하나도 없으면 [조건 미달] */
+          const br = it.branches.find(x => x.need.every(needMet));
+          run(br ? br.lines : it.needLines, () => showInvestigate("move"));
           return;
         }
         if (locked) {
