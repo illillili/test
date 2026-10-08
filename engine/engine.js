@@ -191,6 +191,10 @@ function exec(a) {
       if (L) { S.keepMid = true; renderLocks(L.steps.length, 0); }
       return step();
     }
+    case "unlocks":
+      /* [자물쇠 숨김]: [자물쇠 표시]로 띄운 자물쇠 그래픽을 내려요. 사이코록 도중에는 그대로 둬요 */
+      if (!S.lock) { $("middle").querySelector(".psyche")?.remove(); S.keepMid = false; }
+      return step();
     case "unlock": {
       const el = document.querySelector(".lock:not(.gone)");
       S.lock.broken++;
