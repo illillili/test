@@ -369,8 +369,10 @@ function buildGame(files) {
           else err(at, `[${cmd}]은(는) 모르는 명령이에요. 쓸 수 있는 명령: ${COMMANDS.map(c => "[" + c + "]").join(" ")}`);
       }
   };
-  /* 선택지 안까지 살펴서 이 명령이 있는지 */
-  const hasDo = (lines, d) => lines.some(l => l.do === d || (l.do === "choice" && l.options.some(o => hasDo(o.lines, d))));
+  /* 선택지·[제시 요구] 안까지 살펴서 이 명령이 있는지 */
+  const hasDo = (lines, d) => lines.some(l => l.do === d
+    || (l.do === "choice" && l.options.some(o => hasDo(o.lines, d)))
+    || (l.do === "demand" && [l.ok, l.wrong, ...l.near.map(n => n.lines)].some(x => hasDo(x, d))));
   const hasGoto = lines => hasDo(lines, "goto");
   const blockErr = (b, allowed, sceneName) => { if (!allowed.includes(b.kind)) err(b.at, `'${sceneName}' 장면에는 '## ${b.kind}' 블록을 쓸 수 없어요. 쓸 수 있는 것: ${allowed.map(a => "## " + a).join(", ")}`); };
   const markerErr = (b, ok) => { if (b.marker && b.marker !== ok) err(b.at, `이 블록에는 그 [표시]를 쓸 수 없어요.`); };
