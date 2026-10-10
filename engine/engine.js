@@ -460,6 +460,16 @@ function psychePresent(id) {
     });
     return;
   }
+  /* [그럴듯할 때]: 정답은 아니지만 그럴듯한 증거. 신뢰도는 그대로, 대사 뒤 같은 자물쇠로 돌아옴.
+     그 안에 [신뢰도] -1 을 직접 적어서 0이 되면 틀렸을 때처럼 ## 실패로 쫓겨나요 */
+  const near = (st.near || []).find(n => n.ids.includes(id));
+  if (near) {
+    run(near.lines, () => {
+      if (S.hp <= 0) run(L.fail.concat([{ do: "heal" }]), psycheExit);
+      else psycheAsk();
+    });
+    return;
+  }
   run(L.wrong.concat([{ do: "hp", n: -1 }]), () => {
     if (S.hp <= 0) run(L.fail.concat([{ do: "heal" }]), psycheExit);
     else psycheAsk();
