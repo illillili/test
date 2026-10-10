@@ -63,6 +63,11 @@ function parseStory(files) {
         if (key === "제시 요구") inDemand = true;
         if (key === "제시 요구 끝") inDemand = false;
         if (inDemand && DEMAND_MARKERS.includes(key)) { target.push({ cmd: key, val, at }); return; }
+        /* 사이코록의 ## 자물쇠 블록 안 [그럴듯할 때]: 정답은 아니지만 그럴듯한 증거의 반응 대사 */
+        if (block && block.kind === "자물쇠" && key === "그럴듯할 때") {
+          const nr = { val, at, lines: [] };
+          (block.near = block.near || []).push(nr); target = nr.lines; return;
+        }
         if (block && MARKERS[key]) { block.marker = MARKERS[key]; target = block.alt; return; }
         if (!block && VISIT_MARKERS[key]) {
           const k = VISIT_MARKERS[key];
@@ -253,7 +258,7 @@ function buildGame(files) {
         continue;
       }
       if (!choice && ["정답일 때", "그럴듯할 때", "틀렸을 때", "틀리면 넘어감", "제시 요구 끝"].includes(it.cmd)) {
-        err(it.at, `[${it.cmd}]은(는) [제시 요구] 아래에서만 쓸 수 있어요.`);
+        err(it.at, it.cmd === "그럴듯할 때" ? "[그럴듯할 때]는 [제시 요구] 아래나 사이코록의 ## 자물쇠 블록 안에서만 쓸 수 있어요." : `[${it.cmd}]은(는) [제시 요구] 아래에서만 쓸 수 있어요.`);
         continue;
       }
       if (it.cmd === "선택") {
@@ -558,7 +563,21 @@ function buildGame(files) {
           if (!ans) err(b.at, "## 자물쇠 블록에 [정답] 증거 이름이 필요해요.");
           else if (!isThing(ans)) err(b.settings["정답"].at, `정답 '${ans}'이(가) 증거나 인물 파일에 없어요.`);
           if (!b.alt.length) err(b.at, "## 자물쇠 블록에 [정답일 때] 아래 대사가 필요해요.");
-          L.steps.push({ lines: compileLines(b.lines, { inLock: true }), answer: canon(ans), ok: compileLines(b.alt, { inLock: true }) });
+          /* [그럴듯할 때]: 정답은 아니지만 그럴듯한 증거. 대사 → 신뢰도 그대로 → 같은 자물쇠로 돌아옴 */
+          const nearSeen = new Set(ans && isThing(ans) ? [canon(ans)] : []);
+          const near = (b.near || []).map(nr => {
+            const names = split(nr.val);
+            if (!names.length) err(nr.at, "[그럴듯할 때] 뒤에 증거(또는 인물) 이름을 적어 주세요. 여러 개면 쉼표로.");
+            if (!nr.lines.length) err(nr.at, "[그럴듯할 때] 아래에 대사를 적어 주세요.");
+            names.forEach(n => {
+              if (!isThing(n)) err(nr.at, `[그럴듯할 때]의 '${n}'이(가) 증거나 인물 파일에 없어요.`);
+              else if (ans && canon(n) === canon(ans)) err(nr.at, `'${n}'은(는) 이미 이 자물쇠의 [정답]이에요. [그럴듯할 때]에서 빼 주세요.`);
+              else if (nearSeen.has(canon(n))) err(nr.at, `'${n}'이(가) 이 자물쇠의 [그럴듯할 때]에 두 번 나와요. 한 곳에만 적어 주세요.`);
+              nearSeen.add(canon(n));
+            });
+            return { ids: names.map(canon), lines: compileLines(nr.lines, { inLock: true }) };
+          });
+          L.steps.push({ lines: compileLines(b.lines, { inLock: true }), answer: canon(ans), ok: compileLines(b.alt, { inLock: true }), near });
         } else if (map[b.kind]) {
           markerErr(b, null);
           let lines = compileLines(b.lines, { inLock: true });
