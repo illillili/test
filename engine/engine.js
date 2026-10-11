@@ -607,12 +607,23 @@ function openRecord(cb) {
 
 function closeRecord() { $("record").hidden = true; S.presentCb = null; markRecord(); }
 
+/* 지금 탭의 항목들 (목록에 있는 것만) */
+function recordIds() {
+  const src = S.recordTab === "ev" ? EVIDENCE : PEOPLE;
+  return (S.recordTab === "ev" ? S.ev : S.people).filter(id => src[id]);
+}
+
+/* 법정기록: 왼쪽 목록 + 오른쪽 설명. 창 크기는 고정이고, 목록과 설명이 각자 안에서 스크롤돼요.
+   열면 새로 얻은 항목(없으면 맨 위 항목)이 골라진 채로 시작해요. */
 function renderRecord() {
   const R = $("record"), tab = S.recordTab;
-  const ids = tab === "ev" ? S.ev : S.people, src = tab === "ev" ? EVIDENCE : PEOPLE;
+  const ids = recordIds(), src = tab === "ev" ? EVIDENCE : PEOPLE;
+  if (!ids.includes(S.recordSel)) S.recordSel = ids.find(id => S.fresh.has(id)) || ids[0] || null;
+  if (S.recordSel) S.fresh.delete(S.recordSel);
   const sel = S.recordSel && src[S.recordSel];
+  const scroll = R.querySelector(".ledger-list")?.scrollTop || 0; /* 다시 그려도 목록 스크롤 위치는 그대로 */
   R.innerHTML = `
-    <div class="record-box" role="dialog" aria-label="법정기록">
+    <div class="record-box ledger" role="dialog" aria-label="법정기록">
       <div class="record-head">
         <h2>${S.presentCb ? "무엇을 제시할까?" : "법정기록"}</h2>
         <div class="tabs">
@@ -620,31 +631,40 @@ function renderRecord() {
           <button type="button" data-tab="pp" aria-pressed="${tab === "pp"}">인물</button>
         </div>
       </div>
-      <div class="cards">${ids.length ? "" : '<p class="empty">아직 아무것도 없다.</p>'}</div>
-      <div class="detail">${sel ? "" : '<p>항목을 누르면 자세한 내용이 보인다.</p>'}</div>
+      <div class="ledger-body">
+        <div class="ledger-list">${ids.length ? "" : '<p class="empty">아직 아무것도 없다.</p>'}</div>
+        <div class="detail"></div>
+      </div>
       <div class="record-foot">
+        <span class="keys">↑ ↓ 로 넘겨 보기</span>
         <button type="button" data-act="close">닫기</button>
         ${S.presentCb ? `<button type="button" class="go" data-act="present" ${S.recordSel ? "" : "disabled"}>제시한다</button>` : ""}
       </div>
     </div>`;
-  const cards = R.querySelector(".cards");
+  const list = R.querySelector(".ledger-list");
   ids.forEach(id => {
-    const it = src[id]; if (!it) return;
+    const it = src[id];
     const b = document.createElement("button");
-    b.type = "button"; b.className = "card"; b.setAttribute("aria-pressed", String(S.recordSel === id));
-    b.innerHTML = `<span class="no"><span></span>${S.fresh.has(id) ? "<b>NEW</b>" : ""}</span><span class="nm"></span>`;
-    b.querySelector(".no span").textContent = it.no;
+    b.type = "button"; b.className = "entry"; b.setAttribute("aria-current", String(S.recordSel === id));
+    b.innerHTML = `<span class="no"></span><span class="nm"></span>${S.fresh.has(id) ? "<b>NEW</b>" : ""}`;
+    b.querySelector(".no").textContent = it.no || "";
     b.querySelector(".nm").textContent = it.name;
-    b.onclick = () => { S.recordSel = id; S.fresh.delete(id); renderRecord(); };
-    cards.appendChild(b);
+    b.onclick = () => { S.recordSel = id; renderRecord(); };
+    list.appendChild(b);
   });
   if (sel) {
     const d = R.querySelector(".detail");
+    const no = document.createElement("span"); no.className = "no"; no.textContent = sel.no || "";
     const h = document.createElement("h3"); h.textContent = sel.name;
     const p = document.createElement("p"); setRich(p, sel.desc);
-    d.append(h, p);
+    d.append(no, h, p);
   }
-  R.querySelectorAll("[data-tab]").forEach(b => b.onclick = () => { S.recordTab = b.dataset.tab; S.recordSel = null; renderRecord(); });
+  /* 설명을 채운 뒤에 목록 높이가 정해지니, 스크롤은 그다음에 맞춰요 */
+  list.scrollTop = scroll;
+  const cur = list.querySelector('[aria-current="true"]');
+  if (cur && (cur.offsetTop < list.scrollTop || cur.offsetTop + cur.offsetHeight > list.scrollTop + list.clientHeight))
+    list.scrollTop = cur.offsetTop - list.clientHeight / 2 + cur.offsetHeight / 2;
+  R.querySelectorAll("[data-tab]").forEach(b => b.onclick = () => { S.recordTab = b.dataset.tab; S.recordSel = null; R.querySelector(".ledger-list").scrollTop = 0; renderRecord(); });
   R.querySelector('[data-act="close"]').onclick = closeRecord;
   const go_ = R.querySelector('[data-act="present"]');
   if (go_) go_.onclick = () => {
@@ -1017,6 +1037,13 @@ $("dialog").addEventListener("click", advance);
 document.addEventListener("keydown", e => {
   if (e.key === "Escape" && !$("menu").hidden) { closeMenu(); return; }
   if (e.key === "Escape" && !$("record").hidden) { closeRecord(); return; }
+  /* 법정기록: 위아래 방향키로 항목 넘기기 */
+  if ((e.key === "ArrowUp" || e.key === "ArrowDown") && !$("record").hidden) {
+    const ids = recordIds(), i = ids.indexOf(S.recordSel) + (e.key === "ArrowDown" ? 1 : -1);
+    e.preventDefault();
+    if (ids[i]) { S.recordSel = ids[i]; renderRecord(); }
+    return;
+  }
   if (e.key !== "Enter" && e.key !== " ") return;
   if (!$("objection").hidden) { e.preventDefault(); $("objection").click(); return; }
   if (document.activeElement === $("dialog")) { e.preventDefault(); advance(); }

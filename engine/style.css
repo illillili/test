@@ -143,18 +143,32 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--brass)
 .tabs { display: flex; gap: 6px; }
 .tabs button { background: none; border: 1px solid var(--line); border-radius: 4px; padding: 5px 12px; font-size: 13px; }
 .tabs button[aria-pressed="true"] { border-color: var(--brass); color: var(--brass); }
-.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; }
-.card {
-  background: var(--panel-2); border: 1px solid var(--line); border-radius: 4px; padding: 10px; text-align: left;
-  display: flex; flex-direction: column; gap: 2px; min-width: 0;
+/* 법정기록 창은 크기가 고정이에요. 목록과 설명은 각자 안에서 스크롤돼요 */
+.record-box.ledger { box-sizing: border-box; height: min(560px, 100%); overflow: hidden; }
+.ledger-body { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 240px) minmax(0, 1fr); gap: 16px; }
+.ledger-list { position: relative; overflow-y: auto; display: flex; flex-direction: column; gap: 2px; padding-right: 8px; border-right: 1px solid var(--line); }
+.entry {
+  display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 8px; align-items: baseline; flex: none;
+  background: none; border: 1px solid transparent; border-radius: 4px; padding: 6px 8px; text-align: left; font-size: 14px;
 }
-.card[aria-pressed="true"] { border-color: var(--brass); box-shadow: inset 0 0 0 1px var(--brass); }
-.card .no { font-family: var(--f-mono); font-size: 11px; color: var(--muted); letter-spacing: .08em; display: flex; justify-content: space-between; }
-.card .no b { color: var(--alarm); font-weight: 500; }
-.card .nm { font-weight: 700; font-size: 14px; }
-.detail { border-top: 1px solid var(--line); padding-top: 12px; min-height: 5em; }
-.detail h3 { margin: 0 0 4px; font-size: 16px; }
+.entry:hover { background: var(--panel-2); }
+.entry[aria-current="true"] { background: var(--panel-2); border-color: var(--brass); }
+.entry .no { font-family: var(--f-mono); font-size: 11px; color: var(--muted); letter-spacing: .08em; min-width: 4.2em; }
+.entry .nm { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.entry b { font-family: var(--f-mono); font-size: 10px; color: var(--alarm); font-weight: 500; }
+.detail { overflow-y: auto; min-width: 0; display: grid; align-content: start; gap: 4px; }
+.detail .no { font-family: var(--f-mono); font-size: 11px; color: var(--muted); letter-spacing: .08em; }
+.detail h3 { margin: 0 0 4px; font-family: var(--f-display); font-weight: 800; font-size: 20px; line-height: 1.35; text-wrap: balance; }
 .detail p { margin: 0; color: var(--muted); max-width: 60ch; white-space: pre-wrap; }
+.record-foot .keys { margin-right: auto; align-self: center; font-size: 12px; color: var(--muted); }
+/* 좁은 화면: 설명이 위, 목록이 아래. 창은 화면 높이에 맞춰 고정 */
+@media (max-width: 560px) {
+  .record-box.ledger { height: 100%; }
+  .ledger-body { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); gap: 10px; }
+  .detail { order: -1; max-height: 40vh; border-bottom: 1px solid var(--line); padding-bottom: 10px; }
+  .ledger-list { border-right: none; padding-right: 0; }
+  .record-foot .keys { display: none; }
+}
 .record-foot { display: flex; gap: 8px; justify-content: flex-end; }
 .record-foot button { border-radius: 4px; padding: 8px 16px; border: 1px solid var(--line); background: var(--panel-2); }
 .record-foot .go { border-color: var(--brass); color: var(--ink); background: var(--brass); font-weight: 700; }
