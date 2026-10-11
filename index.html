@@ -8,7 +8,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=IBM+Plex+Mono:wght@500&family=IBM+Plex+Sans+KR:wght@400;500;700&family=Nanum+Myeongjo:wght@700;800&display=swap">
-<link rel="stylesheet" href="engine/style.css">
+<!-- 엔진 파일은 열 때마다 새로 받아요 (대본 파일과 같은 방식). 휴대폰 브라우저가 옛 화면을 붙잡고 있지 않게 -->
+<script>window.V = "?v=" + Date.now(); document.write('<link rel="stylesheet" href="engine/style.css' + V + '">');</script>
 </head>
 <body>
 <!-- 이 파일은 고칠 필요가 없습니다. 대본은 story 폴더에 있어요. -->
@@ -37,8 +38,8 @@
 <input type="file" id="loadFile" accept=".json,.txt,application/json,text/plain" hidden>
 <div class="objection" id="objection" hidden><div class="burst" id="burst"></div></div>
 
-<script src="engine/parser.js" charset="utf-8"></script>
-<script src="story/list.js" charset="utf-8"></script>
-<script src="engine/engine.js" charset="utf-8"></script>
+<script>
+["engine/parser.js", "story/list.js", "engine/engine.js"].forEach(f => document.write('<script src="' + f + V + '" charset="utf-8"><\/script>'));
+</script>
 </body>
 </html>
