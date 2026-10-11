@@ -713,7 +713,7 @@ Vongola & C. S.a.p.A. — Riservata personale<br>Egr. Presidente Tsunayoshi Sawa
 양손에 뭔가 들고 있는데… 무, 무기인가? 무섭군.
 
 나루호도: (이 사람이 새 주인인가 보다.)
-나루호도: (역시… 이번에도 *동창회* 멤버 중 한 명이려나.
+나루호도: (역시… 이번에도 *동창회* 멤버 중 한 명이려나.)
 
 [인물] 히바리 쿄야
 
@@ -1315,7 +1315,7 @@ Vongola & C. S.a.p.A. — Riservata personale<br>Egr. Presidente Tsunayoshi Sawa
 
 
 # 야마모토 퇴실
-[다음] 끝
+[다음] 츠나요시와의 재대결
 [장소] 10월 3일 오후 | 유치장 면회실
 
 야마모토 씨는 면회실을 나가 버렸다.
@@ -1336,12 +1336,6 @@ Vongola & C. S.a.p.A. — Riservata personale<br>Egr. Presidente Tsunayoshi Sawa
 [흔들기]
 사사가와: 좋아, 극한으로 가 보자고!
 < 2일차 · 탐정 · 전편 - 끝 >
-
-# 끝
-[종류] 엔딩
-[제목] 샘플 종료
-플레이해주셔서 감사합니다. 업데이트를 기다려 주세요.
-
 
 
 # 사사가와의 자물쇠
