@@ -812,9 +812,6 @@ Vongola & C. S.a.p.A. — Riservata personale<br>Egr. Presidente Tsunayoshi Sawa
 [증거] 안뜰의 유리 알갱이
 
 ## 이동: 호텔 로비
-[조건] 츠나요시와의 재대결:사건 당일에 대해
-[이동] 빈 호텔 로비 - 해제후
-[조건 미달]
 [이동] 빈 호텔 로비 - 2일차
 
 ## 이동: 나루호도 법률사무소
@@ -1735,6 +1732,7 @@ Vongola & C. S.a.p.A. — Riservata personale<br>Egr. Presidente Tsunayoshi Sawa
 [질문 추가] 목격한 것
 
 ## 대화: 목격한 것
+[숨김]
 나루호도: 츠나요시 씨와 고쿠데라 씨는 사건이 벌어진 날 호텔에 도착하신 거군요.
 고쿠데라: …….
 고쿠데라: 그래.
