@@ -1350,7 +1350,6 @@ Vongola & C. S.a.p.A. — Riservata personale<br>Egr. Presidente Tsunayoshi Sawa
 
 
 # 츠나요시와의 재대결
-[챕터] 2일차 · 탐정 · 후편
 [종류] 조사
 [대기] 마피아라니 뭔가 무섭지만…. 물어볼 건 물어 봐야겠지.
 [장소] 10월 3일 오후 | 호텔 반도 슈페리어관 1302호
