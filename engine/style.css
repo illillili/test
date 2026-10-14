@@ -156,7 +156,14 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--brass)
 .entry .no { font-family: var(--f-mono); font-size: 11px; color: var(--muted); letter-spacing: .08em; min-width: 4.2em; }
 .entry .nm { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .entry b { font-family: var(--f-mono); font-size: 10px; color: var(--alarm); font-weight: 500; }
-.detail { overflow-y: auto; min-width: 0; display: grid; align-content: start; gap: 4px; }
+.detail-pane { min-width: 0; min-height: 0; display: flex; flex-direction: column; gap: 8px; }
+.detail { flex: 1; min-height: 0; overflow-y: auto; min-width: 0; display: grid; align-content: start; gap: 4px; }
+/* 설명 칸 오른쪽 아래의 ▲▼: 목록을 누르지 않고도 위아래로 넘겨 봐요 */
+.rec-nav { display: flex; align-items: center; justify-content: flex-end; gap: 6px; }
+.rec-nav .count { font-family: var(--f-mono); font-size: 11px; color: var(--muted); margin-right: 4px; }
+.rec-nav button { width: 36px; height: 32px; padding: 0; border-radius: 4px; border: 1px solid var(--line); background: var(--panel-2); font-size: 12px; }
+.rec-nav button:hover:not(:disabled) { border-color: var(--brass); color: var(--brass); }
+.rec-nav button:disabled { opacity: .35; cursor: not-allowed; }
 .detail .no { font-family: var(--f-mono); font-size: 11px; color: var(--muted); letter-spacing: .08em; }
 .detail h3 { margin: 0 0 4px; font-family: var(--f-display); font-weight: 800; font-size: 20px; line-height: 1.35; text-wrap: balance; }
 .detail p { margin: 0; color: var(--muted); max-width: 60ch; white-space: pre-wrap; }
@@ -165,7 +172,7 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--brass)
 @media (max-width: 560px) {
   .record-box.ledger { height: 100%; }
   .ledger-body { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); gap: 10px; }
-  .detail { order: -1; max-height: 40vh; border-bottom: 1px solid var(--line); padding-bottom: 10px; }
+  .detail-pane { order: -1; max-height: 40vh; border-bottom: 1px solid var(--line); padding-bottom: 10px; }
   .ledger-list { border-right: none; padding-right: 0; }
   .record-foot .keys { display: none; }
 }

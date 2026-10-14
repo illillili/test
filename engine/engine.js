@@ -613,6 +613,12 @@ function recordIds() {
   return (S.recordTab === "ev" ? S.ev : S.people).filter(id => src[id]);
 }
 
+/* 법정기록에서 앞(-1)/뒤(+1) 항목으로 넘기기. 방향키와 ▲▼ 버튼이 같이 써요 */
+function stepRecord(d) {
+  const ids = recordIds(), next = ids[ids.indexOf(S.recordSel) + d];
+  if (next) { S.recordSel = next; renderRecord(); }
+}
+
 /* 법정기록: 왼쪽 목록 + 오른쪽 설명. 창 크기는 고정이고, 목록과 설명이 각자 안에서 스크롤돼요.
    열면 새로 얻은 항목(없으면 맨 위 항목)이 골라진 채로 시작해요. */
 function renderRecord() {
@@ -633,7 +639,14 @@ function renderRecord() {
       </div>
       <div class="ledger-body">
         <div class="ledger-list">${ids.length ? "" : '<p class="empty">아직 아무것도 없다.</p>'}</div>
-        <div class="detail"></div>
+        <div class="detail-pane">
+          <div class="detail"></div>
+          <div class="rec-nav">
+            <span class="count">${ids.length ? `${ids.indexOf(S.recordSel) + 1} / ${ids.length}` : ""}</span>
+            <button type="button" data-step="-1" aria-label="이전 항목" ${ids.indexOf(S.recordSel) > 0 ? "" : "disabled"}>▲</button>
+            <button type="button" data-step="1" aria-label="다음 항목" ${ids.indexOf(S.recordSel) < ids.length - 1 ? "" : "disabled"}>▼</button>
+          </div>
+        </div>
       </div>
       <div class="record-foot">
         <span class="keys">↑ ↓ 로 넘겨 보기</span>
@@ -665,6 +678,7 @@ function renderRecord() {
   if (cur && (cur.offsetTop < list.scrollTop || cur.offsetTop + cur.offsetHeight > list.scrollTop + list.clientHeight))
     list.scrollTop = cur.offsetTop - list.clientHeight / 2 + cur.offsetHeight / 2;
   R.querySelectorAll("[data-tab]").forEach(b => b.onclick = () => { S.recordTab = b.dataset.tab; S.recordSel = null; R.querySelector(".ledger-list").scrollTop = 0; renderRecord(); });
+  R.querySelectorAll("[data-step]").forEach(b => b.onclick = () => stepRecord(Number(b.dataset.step)));
   R.querySelector('[data-act="close"]').onclick = closeRecord;
   const go_ = R.querySelector('[data-act="present"]');
   if (go_) go_.onclick = () => {
@@ -1039,9 +1053,8 @@ document.addEventListener("keydown", e => {
   if (e.key === "Escape" && !$("record").hidden) { closeRecord(); return; }
   /* 법정기록: 위아래 방향키로 항목 넘기기 */
   if ((e.key === "ArrowUp" || e.key === "ArrowDown") && !$("record").hidden) {
-    const ids = recordIds(), i = ids.indexOf(S.recordSel) + (e.key === "ArrowDown" ? 1 : -1);
     e.preventDefault();
-    if (ids[i]) { S.recordSel = ids[i]; renderRecord(); }
+    stepRecord(e.key === "ArrowDown" ? 1 : -1);
     return;
   }
   if (e.key !== "Enter" && e.key !== " ") return;
