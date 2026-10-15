@@ -191,7 +191,7 @@ function buildGame(files) {
       if (!choice) return;
       if (choice.options.length < 2) err(choice.at, "선택지는 [선택]을 두 개 이상 적어 주세요.");
       if (choice.options.every(o => o.wrong)) err(choice.at, "선택지가 모두 [오답]이에요. 정답 선택지가 하나는 있어야 빠져나갈 수 있어요.");
-      out.push({ do: "choice", options: choice.options.map(o => ({ label: o.label, wrong: o.wrong, lines: compileLines(o.raw, o.wrong ? { ...ctx, inWrong: true } : ctx) })) });
+      out.push({ do: "choice", options: choice.options.map(o => ({ label: o.label, wrong: o.wrong, hp: o.hp, lines: compileLines(o.raw, o.wrong ? { ...ctx, inWrong: true } : ctx) })) });
       choice = null;
     };
     /* [제시 요구] 부터 [제시 요구 끝] 까지를 하나로 묶습니다. 안에 선택지가 들어가도 돼요 */
@@ -269,9 +269,15 @@ function buildGame(files) {
         if (!choice) err(it.at, "[선택 끝] 앞에 [선택]이 없어요.");
         closeChoice();
       } else if (it.cmd === "오답") {
-        /* [오답]: 이 선택지 대사를 보여 준 뒤 (법정 중이면 신뢰도 -1) 같은 선택지로 돌아감 */
+        /* [오답]: 이 선택지 대사를 보여 준 뒤 (법정 중이면 신뢰도 -1) 같은 선택지로 돌아감.
+           [오답] 0 이면 깎지 않고, [오답] -2 처럼 적으면 그만큼 깎아요 */
+        const n = it.val ? Number(it.val) : -1;
         if (!choice) err(it.at, "[오답]은 [선택] 바로 아래에 적어 주세요.");
-        else { choice.options[choice.options.length - 1].wrong = true; hpDrops.push({ scene: curScene, at: it.at, courtOnly: true }); }
+        else if (!Number.isInteger(n) || n > 0) err(it.at, "[오답] 뒤에는 아무것도 안 적거나(-1), 0(안 깎음), -2 같은 숫자를 적어 주세요.");
+        else {
+          Object.assign(choice.options[choice.options.length - 1], { wrong: true, hp: n });
+          if (n < 0) hpDrops.push({ scene: curScene, at: it.at, courtOnly: true });
+        }
       } else if (choice) choice.options[choice.options.length - 1].raw.push(it);
       else compileOne(it, out, ctx);
     }
