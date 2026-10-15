@@ -222,8 +222,8 @@ function exec(a) {
         b.onclick = () => {
           if (Date.now() < readyAt) return;
           box.remove(); S.idle = null; $("dialog").classList.remove("idle"); $("dialog").focus({ preventScroll: true });
-          /* [오답]: 대사 → 신뢰도 -1 → 같은 선택지로. 0이 되면 hp 명령이 게임오버로 보냄 */
-          if (o.wrong) S.queue.unshift(...o.lines, ...penalty(), { ...a, prompt });
+          /* [오답]: 대사 → 신뢰도 -1 ([오답] 0 이면 안 깎음) → 같은 선택지로. 0이 되면 hp 명령이 게임오버로 보냄 */
+          if (o.wrong) S.queue.unshift(...o.lines, ...penalty(o.hp), { ...a, prompt });
           else S.queue.unshift(...o.lines);
           step();
         };
@@ -276,7 +276,7 @@ function exec(a) {
 }
 
 /* [오답]·[제시 요구]에서 틀렸을 때의 벌점. 법정 중([법정 시작] 뒤)에만 신뢰도 -1, 법정 밖이면 대사만 */
-function penalty() { return S.court ? [{ do: "hp", n: -1 }] : []; }
+function penalty(n = -1) { return S.court && n ? [{ do: "hp", n }] : []; }
 
 /* 신뢰도 0: 지금 장면의 [게임오버] (없으면 설정의 [게임오버]) 로 갑니다.
    게이지가 비는 모습이 잠깐 보이도록 조금 기다렸다가 넘어가요. */
