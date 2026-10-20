@@ -1099,7 +1099,7 @@ loadStory(loadErr => {
   MAX_HP = CONFIG.hp; S.hp = MAX_HP;
   GAME_ID = "txtgame:" + CONFIG.title;
   ORIGINAL_DESC = Object.fromEntries(Object.entries({ ...PEOPLE, ...EVIDENCE }).map(([k, v]) => [k, v.desc]));
-  document.title = CONFIG.title;
+  document.title = [CONFIG.title, CONFIG.sub].filter(Boolean).join(" — ");
   $("brand").textContent = CONFIG.title;
   showTitle();
 });
