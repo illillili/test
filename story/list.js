@@ -8,6 +8,7 @@ config.js
 2_1_investigation.js
 3_2_court.js
 4_2_investigation_1.js
-4_2_investigation_2.js
+5_2_investigation_2.js
+6_3_court_1
 gameover.js
 `
