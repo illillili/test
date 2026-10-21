@@ -1353,7 +1353,7 @@ Vongola & C. S.a.p.A. — Riservata personale<br>Egr. Presidente Tsunayoshi Sawa
 
 
 # 야마모토 퇴실
-[다음] 츠나요시와의 재대결
+[다음] 사무소 - 해제후
 [장소] 10월 3일 오후 | 유치장 면회실
 
 야마모토 씨는 면회실을 나가 버렸다.
@@ -1375,6 +1375,7 @@ Vongola & C. S.a.p.A. — Riservata personale<br>Egr. Presidente Tsunayoshi Sawa
 사사가와: 나루호도….
 [흔들기]
 사사가와: 좋아, 극한으로 가 보자고!
+[회복]
 < 2일차 · 탐정 · 전편 - 끝 >
 
 //사이코록 (다 모았을 때)//
