@@ -1125,6 +1125,7 @@ Vongola & C. S.a.p.A. — Riservata personale<br>Egr. Presidente Tsunayoshi Sawa
 사사가와: 그렇군. 극한으로 위험한 짓이다!
 [흔들기]
 나루호도: (또야?)
+[표시 해제]
 사사가와: 총은 경고 삼아 마구잡이로 쏴도 되는 물건이 아니다!
 사사가와: 진심일 때만 꺼낼 것. 그게 상식이라는 거다!!
 [흔들기]
