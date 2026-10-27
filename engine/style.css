@@ -218,6 +218,20 @@ textarea.code:focus { outline: 2px solid var(--brass); outline-offset: 1px; }
 .title-card .actions button.primary { border-color: var(--brass); background: var(--brass); color: var(--ink); font-weight: 700; }
 .placard[hidden] { display: none !important; }
 
+/* 챕터 제목 화면 ([챕터]가 붙은 장면에 처음 들어갈 때) */
+.chapter-card {
+  position: fixed; inset: 0; z-index: 22; display: grid; place-items: center; text-align: center;
+  background: #07080c; cursor: pointer; animation: fade-in .6s ease-out;
+}
+.chapter-card:focus-visible { outline: none; }
+.chapter-card .inner { display: grid; gap: 10px; justify-items: center; padding-inline: 16px; animation: rise .7s .4s ease-out both; }
+.chapter-card .sub { font-family: var(--f-mono); font-size: 11px; letter-spacing: .3em; color: var(--brass); }
+.chapter-card .rule { width: 48px; height: 2px; background: var(--brass); }
+.chapter-card .title { font-family: var(--f-display); font-weight: 800; font-size: clamp(28px, 8vw, 44px); line-height: 1.2; text-wrap: balance; }
+.chapter-card .hint { margin-top: 18px; font-family: var(--f-mono); font-size: 11px; letter-spacing: .2em; color: var(--muted); animation: blink 1.2s 1.2s step-end infinite both; }
+@keyframes fade-in { from { opacity: 0; } }
+@keyframes rise { from { opacity: 0; transform: translateY(8px); } }
+
 /* 이의 있음! */
 .objection {
   position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; z-index: 30;

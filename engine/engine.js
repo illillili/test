@@ -313,11 +313,36 @@ function go(id) {
     S.checkpoint = { ...snapshot(), scene: from, ended: id };
     store.set(KEY_AUTO(), S.checkpoint);
   }
+  /* 플레이 중에 새 [챕터]에 처음 들어서면 챕터 제목 화면을 먼저 보여 줘요 (첫 장면, 불러오기, 게임오버, 엔딩 뒤 처음부터는 제외) */
+  const newChapter = sc.chapter && SCENES[from] && from !== id && SCENES[from].type !== "end" && !S.gameover && !S.seen.has(id + ":@챕터");
   S.scene = id; S.keepMid = false;
   S.placeAt[id] = [$("time").textContent, $("loc").textContent];
   S.cardsAt[id] = S.cards.slice();
   recordChapter(id, from);
   checkpoint();
+  if (newChapter) chapterCard(sc.chapter, () => startScene(sc, id));
+  else startScene(sc, id);
+}
+
+/* 챕터 제목 화면: 화면을 가리고 챕터 이름을 띄워요. 누르면(또는 Enter/스페이스) 닫히고 장면이 시작돼요 */
+function chapterCard(title, done) {
+  S.idle = "chapter"; $("controls").innerHTML = "";
+  const ov = document.createElement("div");
+  ov.className = "chapter-card"; ov.tabIndex = 0; ov.setAttribute("role", "button"); ov.setAttribute("aria-label", "계속");
+  ov.innerHTML = `<div class="inner"><div class="sub">CHAPTER</div><div class="rule"></div><div class="title"></div><div class="hint">▼ 계속</div></div>`;
+  ov.querySelector(".title").textContent = title;
+  const close = () => {
+    ov.remove(); S.idle = null;
+    $("dialog").focus({ preventScroll: true });
+    done();
+  };
+  ov.onclick = close;
+  ov.onkeydown = e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.stopPropagation(); close(); } };
+  document.body.appendChild(ov);
+  ov.focus({ preventScroll: true });
+}
+
+function startScene(sc, id) {
   if (sc.type === "dialog") run(sc.lines, () => sc.next ? go(sc.next) : toast("다음 장면이 정해져 있지 않아요."));
   else if (sc.type === "investigate") {
     /* [처음 올 때] 대사는 첫 방문에만. 다 본 뒤에 '방문함'으로 기록해서, 도중에 껐다 켜면 다시 나와요 */
