@@ -27,7 +27,7 @@ const MARKERS = { "다시 볼 때": "again", "조건 미달": "need", "정답일
 const VISIT_MARKERS = { "처음 올 때": "first", "다시 올 때": "revisit" };
 /* [제시 요구] 안에서 정답/오답 대사를 나누는 표시 */
 const DEMAND_MARKERS = ["정답일 때", "그럴듯할 때", "틀렸을 때", "틀리면 넘어감"];
-const COMMANDS = ["장소", "증거", "인물", "증거갱신", "인물갱신", "흔들기", "외침", "판결", "해제", "법정 시작", "법정 끝", "회복", "신뢰도", "자물쇠 표시", "이동", "선택", "선택 끝", "선택2", "선택2 끝", "오답", "제시 요구", "제시 요구 끝", "증거 삭제", "증거 이름 변경", "증언 추가", "증언 수정", "질문 추가", "표시", "표시 해제", "자물쇠 숨김"];
+const COMMANDS = ["장소", "증거", "인물", "증거갱신", "인물갱신", "흔들기", "외침", "판결", "해제", "법정 시작", "법정 끝", "회복", "신뢰도", "자물쇠 표시", "이동", "선택", "선택 끝", "선택2", "선택2 끝", "오답", "제시 요구", "제시 요구 끝", "증거 삭제", "증거 이름 변경", "증언 추가", "증언 수정", "질문 추가", "표시", "표시 해제", "자물쇠 숨김", "그림", "그림 해제"];
 const TYPES = { "대화": "dialog", "조사": "investigate", "증언": "testimony", "사이코록": "lock", "엔딩": "end" };
 const RESERVED = ["설정", "등장인물", "증거", "인물파일"];
 
@@ -346,6 +346,19 @@ function buildGame(files) {
           } else if (!names.length || ids.length) out.push({ do: "uncard", ids });
           break;
         }
+        case "그림": {
+          /* [그림] 증거 이름 → 그 증거의 [상세 그림] / [그림] 파일 이름 → story/img 폴더의 그림. 장소 표시와 대사창 사이에 띄워요 */
+          if (!v) { err(at, "[그림] 뒤에 증거 이름이나 그림 파일 이름을 적어 주세요. 예) [그림] 현장 평면도   또는   [그림] floorplan.svg"); break; }
+          if (isThing(v)) {
+            const it = evidence[canon(v)] || people[canon(v)];
+            if (it.detail && it.detail.img) out.push({ do: "pic", src: it.detail.img });
+            else err(at, `[그림] '${v}'에는 [상세 그림]이 없어요. 증거 목록에서 [상세 그림]을 넣거나, 그림 파일 이름을 적어 주세요.`);
+          } else if (/\.(svg|png|jpe?g|gif|webp)$/i.test(v)) out.push({ do: "pic", src: "story/img/" + v });
+          else err(at, `[그림] '${v}'은(는) 증거 이름도, 그림 파일 이름도 아니에요. 파일이면 floorplan.svg 처럼 확장자까지 적어 주세요.`);
+          break;
+        }
+        case "그림 해제":
+        case "그림해제": out.push({ do: "unpic" }); break;
         case "흔들기": out.push({ do: "shake" }); break;
         case "외침": out.push({ do: "objection", text: v || "이의 있음!" }); break;
         case "판결": out.push({ do: "objection", text: v || "유죄", verdict: true }); break;

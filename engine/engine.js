@@ -175,6 +175,8 @@ function exec(a) {
       S.cards = a.ids.length ? S.cards.filter(id => !a.ids.includes(id)) : [];
       renderCards();
       return step();
+    case "pic": showPic(a.src); return step();
+    case "unpic": hidePic(true); return step();
     case "shake": shake(document.querySelector(".stage")); return step();
     case "hp":
       S.hp = Math.max(0, Math.min(MAX_HP, S.hp + a.n)); renderHP(); shake($("hp"));
@@ -316,6 +318,7 @@ function go(id) {
   /* 플레이 중에 새 [챕터]에 처음 들어서면 챕터 제목 화면을 먼저 보여 줘요 (첫 장면, 불러오기, 게임오버, 엔딩 뒤 처음부터는 제외) */
   const newChapter = sc.chapter && SCENES[from] && from !== id && SCENES[from].type !== "end" && !S.gameover && !S.seen.has(id + ":@챕터");
   S.scene = id; S.keepMid = false;
+  hidePic();
   S.placeAt[id] = [$("time").textContent, $("loc").textContent];
   S.cardsAt[id] = S.cards.slice();
   recordChapter(id, from);
@@ -635,6 +638,28 @@ function openDetail(dt, back) {
   };
   document.body.appendChild(z);
   z.focus({ preventScroll: true });
+}
+
+/* ---------- 그림 ([그림] / [그림 해제]) ----------
+   장소 표시와 대사창 사이에 그림을 띄워요. [그림 해제]를 만나거나 장면이 바뀌면 내려가요. */
+const PIC = document.createElement("div");
+PIC.className = "pic"; PIC.hidden = true;
+$("middle").before(PIC);
+
+function showPic(src) {
+  PIC.classList.remove("out"); PIC.onanimationend = null;
+  if (!PIC.hidden && PIC.dataset.src === src) return;
+  PIC.dataset.src = src; PIC.innerHTML = "";
+  const img = document.createElement("img"); img.src = src; img.alt = "";
+  img.onerror = () => { const p = document.createElement("p"); p.className = "zoom-err"; p.textContent = `그림 파일 '${src}'을(를) 찾지 못했어요. story/img 폴더와 파일 이름을 확인해 주세요.`; img.replaceWith(p); };
+  PIC.appendChild(img);
+  PIC.hidden = false;
+}
+function hidePic(fade) {
+  if (PIC.hidden) return;
+  const done = () => { PIC.hidden = true; PIC.classList.remove("out"); PIC.onanimationend = null; PIC.innerHTML = ""; delete PIC.dataset.src; };
+  if (!fade || reduce) return done();
+  PIC.classList.add("out"); PIC.onanimationend = done;
 }
 
 /* ---------- 증거 카드 ([표시] / [표시 해제]) ----------
@@ -1016,7 +1041,7 @@ function showTitle() {
   clearInterval(S.typeTimer);
   S.queue = []; S.onDone = null; S.scene = null; S.checkpoint = null; S.idle = "title";
   S.court = false; S.lock = null; S.gameover = false; renderHP();
-  S.cards = []; renderCards();
+  S.cards = []; renderCards(); hidePic();
   setPlace("", ""); idleLine("");
   $("controls").innerHTML = "";
   const auto = store.get(KEY_AUTO());

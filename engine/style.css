@@ -83,6 +83,14 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--brass)
 @keyframes card-in { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
 
 /* 가운데 영역 */
+/* [그림]: 장소 표시와 대사창 사이의 빈자리에 그림을 띄워요. 가운데 영역이 비어 있으면 그림이 자리를 다 써요 */
+.pic { flex: 1 1 0; min-height: 160px; display: flex; align-items: center; justify-content: center; animation: fade-in .4s ease-out; }
+.pic img { max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 6px; border: 1px solid var(--line); }
+.pic.out { animation: fade-out .3s ease-in forwards; }
+.pic:not([hidden]) + .middle:empty { flex: 0 0 auto; min-height: 0; }
+/* 넓은 화면에서는 게임 창 높이가 내용에 맞춰지니, 그림 자리를 넉넉히 잡아 둬요 */
+@media (min-width: 640px) and (min-height: 760px) { .pic { min-height: min(40vh, 420px); } }
+@keyframes fade-out { to { opacity: 0; } }
 .middle { flex: 1; display: flex; flex-direction: column; justify-content: flex-end; gap: 10px; min-height: 120px; }
 .ce-banner { text-align: center; font-family: var(--f-display); font-weight: 800; color: var(--who-itono); letter-spacing: .08em; font-size: 17px; }
 .ce-banner .count { display: block; font-family: var(--f-mono); font-size: 11px; color: var(--muted); letter-spacing: .14em; font-weight: 500; }
