@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 520" role="img" aria-label="1301호 평면도">
+  <style>
+    text { font-family: "IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif; font-weight: 700; fill: #ece6d6; text-anchor: middle; dominant-baseline: middle; }
+    .room { font-size: 26px; } .item { font-size: 17px; }
+    .wall { fill: none; stroke: #ece6d6; stroke-width: 8; stroke-linecap: square; }
+    .furn { fill: #222939; stroke: #ece6d6; stroke-width: 4; }
+    .see { fill: #d6aa4f; opacity: .22; }
+    .blood { fill: #e24a3b; opacity: .55; }
+    .trail { fill: none; stroke: #e24a3b; stroke-width: 5; stroke-dasharray: 2 12; stroke-linecap: round; opacity: .7; }
+    .glass { stroke: #6ea8ea; stroke-width: 8; }
+    .broken { stroke: #e24a3b; stroke-width: 8; stroke-dasharray: 8 6; }
+  </style>
+  <rect width="640" height="520" fill="#10131b"/>
+  <polygon class="see" points="262,24 330,24 340,30 340,240 360,290 236,290 236,30"/>
+  <ellipse class="blood" cx="292" cy="72" rx="38" ry="22"/>
+  <path class="trail" d="M300,94 C300,180 300,220 370,250 S400,400 380,470"/>
+  <path class="wall" d="M24,24 V496 H340 M420,496 H616 V24"/>
+  <line class="glass" x1="24" y1="24" x2="262" y2="24"/><line class="glass" x1="330" y1="24" x2="616" y2="24"/>
+  <line class="broken" x1="266" y1="24" x2="326" y2="24"/>
+  <path class="wall" d="M232,24 V330 H190 M120,330 H24"/>
+  <path class="wall" d="M344,24 V240 H500 M570,240 H616"/>
+  <rect class="furn" x="40" y="400" width="110" height="80"/><text class="item" x="95" y="440">옷장</text>
+  <rect class="furn" x="248" y="262" width="104" height="56" rx="4"/><text class="item" x="300" y="290">테이블</text>
+  <rect class="furn" x="236" y="372" width="120" height="44" rx="10"/><text class="item" x="296" y="394">소파</text>
+  <text class="room" x="128" y="180">침실</text>
+  <text class="room" x="480" y="130">욕실</text>
+  <text class="room" x="520" y="380">응접실</text>
+</svg>

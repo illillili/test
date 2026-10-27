@@ -611,6 +611,32 @@ function markRecord() {
   if (!S.fresh.size) btn.querySelector(".dot")?.remove();
 }
 
+/* ---------- 상세 (법정기록의 [상세] 버튼) ----------
+   그림이나 긴 글을 화면 전체에 띄워요. 대사창과 법정기록까지 모두 덮고, 누르면 닫혀요. */
+function openDetail(dt, back) {
+  const z = document.createElement("div");
+  z.className = "zoom"; z.tabIndex = 0; z.setAttribute("role", "dialog"); z.setAttribute("aria-label", "상세 (누르면 닫혀요)");
+  if (dt.img) {
+    const img = document.createElement("img"); img.src = dt.img; img.alt = "";
+    img.onerror = () => { const p = document.createElement("p"); p.className = "zoom-err"; p.textContent = `그림 파일 '${dt.img}'을(를) 찾지 못했어요. story/img 폴더와 파일 이름을 확인해 주세요.`; img.replaceWith(p); };
+    z.appendChild(img);
+  } else {
+    const box = document.createElement("div"); box.className = "zoom-text";
+    if (dt.title) { const h = document.createElement("h4"); setRich(h, dt.title); box.appendChild(h); }
+    dt.body.forEach(t => { const p = document.createElement("p"); setRich(p, t); box.appendChild(p); });
+    z.appendChild(box);
+  }
+  const close = () => { z.remove(); back && back.focus({ preventScroll: true }); };
+  z.onclick = close;
+  /* 상세가 떠 있는 동안에는 키 입력이 법정기록으로 가지 않아요. Esc, Enter, 스페이스로 닫혀요 */
+  z.onkeydown = e => {
+    e.stopPropagation();
+    if (e.key === "Escape" || e.key === "Enter" || e.key === " ") { e.preventDefault(); close(); }
+  };
+  document.body.appendChild(z);
+  z.focus({ preventScroll: true });
+}
+
 /* ---------- 증거 카드 ([표시] / [표시 해제]) ----------
    위쪽부터 차례대로 쌓여요. pop 에 든 카드만 나타나는 움직임을 보여 줘요. */
 function renderCards(pop = []) {
@@ -672,6 +698,7 @@ function renderRecord() {
         <div class="detail-pane">
           <div class="detail"></div>
           <div class="rec-nav">
+            ${sel && sel.detail ? `<button type="button" class="more" data-act="more">상세</button>` : ""}
             <span class="count">${ids.length ? `${ids.indexOf(S.recordSel) + 1} / ${ids.length}` : ""}</span>
             <button type="button" data-step="-1" aria-label="이전 항목" ${ids.indexOf(S.recordSel) > 0 ? "" : "disabled"}>▲</button>
             <button type="button" data-step="1" aria-label="다음 항목" ${ids.indexOf(S.recordSel) < ids.length - 1 ? "" : "disabled"}>▼</button>
@@ -710,6 +737,8 @@ function renderRecord() {
   R.querySelectorAll("[data-tab]").forEach(b => b.onclick = () => { S.recordTab = b.dataset.tab; S.recordSel = null; R.querySelector(".ledger-list").scrollTop = 0; renderRecord(); });
   R.querySelectorAll("[data-step]").forEach(b => b.onclick = () => stepRecord(Number(b.dataset.step)));
   R.querySelector('[data-act="close"]').onclick = closeRecord;
+  const more = R.querySelector('[data-act="more"]');
+  if (more) more.onclick = () => openDetail(sel.detail, more);
   const go_ = R.querySelector('[data-act="present"]');
   if (go_) go_.onclick = () => {
     const id = S.recordSel, cb = S.presentCb;

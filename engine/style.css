@@ -176,6 +176,23 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--brass)
   .ledger-list { border-right: none; padding-right: 0; }
   .record-foot .keys { display: none; }
 }
+/* 상세가 있는 항목에만 보이는 버튼 (▲▼ 왼쪽) */
+.rec-nav .more { width: auto; padding: 0 14px; margin-right: auto; border-color: var(--brass); color: var(--brass); font-weight: 700; font-size: 13px; }
+.rec-nav .more:hover { background: var(--brass); color: var(--ink); }
+/* 상세 전체화면: 모든 것을 덮고, 누르면 닫혀요 */
+.zoom {
+  position: fixed; inset: 0; z-index: 40; background: #07080c; cursor: pointer;
+  display: grid; place-items: center; padding: 16px; box-sizing: border-box; animation: fade-in .25s ease-out;
+}
+.zoom:focus-visible { outline: none; }
+.zoom img { max-width: min(100%, 960px); max-height: calc(100vh - 32px); object-fit: contain; display: block; }
+.zoom-text {
+  box-sizing: border-box; width: min(100%, 620px); max-height: calc(100vh - 32px); overflow-y: auto;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 28px 28px 20px; line-height: 1.8;
+}
+.zoom-text h4 { margin: 0 0 16px; padding-bottom: 12px; border-bottom: 2px solid var(--brass); font-family: var(--f-display); font-weight: 800; font-size: 22px; line-height: 1.4; text-wrap: balance; }
+.zoom-text p { margin: 0 0 12px; white-space: pre-wrap; }
+.zoom-err { color: var(--alarm); max-width: 40ch; text-align: center; }
 .record-foot { display: flex; gap: 8px; justify-content: flex-end; }
 .record-foot button { border-radius: 4px; padding: 8px 16px; border: 1px solid var(--line); background: var(--panel-2); }
 .record-foot .go { border-color: var(--brass); color: var(--ink); background: var(--brass); font-weight: 700; }

@@ -69,6 +69,12 @@ function parseStory(files) {
           (block.near = block.near || []).push(nr); target = nr.lines; return;
         }
         if (block && MARKERS[key]) { block.marker = MARKERS[key]; target = block.alt; return; }
+        /* 증거·인물의 상세: [상세 그림] 파일 이름, [상세 제목] 제목, [상세 글] 아래 줄들은 본문 */
+        if (block && (scene.name === "증거" || scene.name === "인물파일") && key.startsWith("상세")) {
+          if (key === "상세 글") { block.detail = []; target = block.detail; return; }
+          if (key === "상세 그림" || key === "상세 제목") { block.settings[key] = { val, at }; return; }
+          return err(at, `[${key}]는 없는 표시예요. [상세 그림], [상세 제목], [상세 글] 중 하나로 적어 주세요.`);
+        }
         if (!block && VISIT_MARKERS[key]) {
           const k = VISIT_MARKERS[key];
           scene[k] = scene[k] || []; scene.visitAt = scene.visitAt || at; target = scene[k]; return;
@@ -141,6 +147,14 @@ function buildGame(files) {
         name: b.head,
         desc: br([val(b.settings, "설명"), ...extra].filter(Boolean).join(" "))
       };
+      /* 상세: 법정기록의 [상세] 버튼으로 전체화면에 띄우는 그림이나 글 */
+      const img = val(b.settings, "상세 그림"), title = val(b.settings, "상세 제목");
+      const body = (b.detail || []).filter(x => x.text).map(x => br(x.text));
+      if (b.detail && !body.length) err(b.at, `'${b.head}'의 [상세 글] 아래에 본문이 없어요.`);
+      if (img && (title || body.length)) err(b.at, `'${b.head}'에 [상세 그림]과 [상세 글]이 함께 있어요. 상세는 하나만 넣을 수 있어요.`);
+      if (img) out[b.head].detail = { img: "story/img/" + img };
+      else if (title || body.length) out[b.head].detail = { title, body };
+      if (title && !body.length && !b.detail) err(b.at, `'${b.head}'에 [상세 제목]만 있어요. 아래에 [상세 글]과 본문을 적어 주세요.`);
     }
     return out;
   };
