@@ -526,11 +526,15 @@ function showStatement() {
   mk("prev", "◀", () => { S.stmt = vis[(pos - 1 + vis.length) % vis.length]; showStatement(); });
   mk("press", "추궁한다", () => { S.revealNow = false; run(st.press || [[CONFIG.hero, "(더 물어볼 건 없을 것 같다.)"]], () => afterPress(sc)); });
   mk("present", "제시한다", () => openRecord(present));
-  mk("next", "▶", () => {
-    if (pos === vis.length - 1) run(loopLines(sc), () => { S.stmt = vis[0]; showStatement(); });
-    else { S.stmt = vis[pos + 1]; showStatement(); }
-  });
+  mk("next", "▶", () => nextStatement(sc));
   c.appendChild(box);
+}
+
+/* 다음 증언으로 넘어가요. 마지막 증언이면 [반복] 대사를 보여 주고 처음으로 */
+function nextStatement(sc) {
+  const vis = visibleStatements(sc), pos = vis.indexOf(S.stmt);
+  if (pos === vis.length - 1) run(loopLines(sc), () => { S.stmt = vis[0]; showStatement(); });
+  else { S.stmt = vis[pos + 1]; showStatement(); }
 }
 
 /* 마지막 증언에서 ▶를 눌렀을 때. 추가/수정 증언이 나온 뒤에는 [증언이 바뀐 뒤] 대사로 */
@@ -540,12 +544,13 @@ function loopLines(sc) {
   return [["", "(증언이 처음으로 돌아갔다.)"]];
 }
 
-/* 추궁한 증언 아래에 숨은 추가/수정 증언이 있으면 나타나게 합니다 */
+/* 추궁한 증언 아래에 숨은 추가/수정 증언이 있으면 나타나게 합니다.
+   새 증언이 없으면 추궁이 끝난 뒤 다음 증언으로 넘어가요 */
 function afterPress(sc) {
   S.pressed.add(S.stmt);
-  if (sc.statements[S.stmt].manual && !S.revealNow) return backToCross(sc);
+  if (sc.statements[S.stmt].manual && !S.revealNow) return backToCross(sc, true);
   const news = sc.statements.map((st, i) => i).filter(i => sc.statements[i].from === S.stmt && !S.revealed.has(i));
-  if (!news.length) return backToCross(sc);
+  if (!news.length) return backToCross(sc, true);
   news.forEach(i => S.revealed.add(i));
   const edited = news.some(i => sc.statements[i].replaces !== undefined);
   run([["", edited ? "(증언이 바뀌었다.)" : "(증언이 추가되었다.)"]], () => { S.stmt = news[0]; backToCross(sc); });
@@ -561,9 +566,9 @@ function allPressed(sc) {
     return !st.manual || sc.statements.some((o, j) => o.from === i && S.revealed.has(j));
   });
 }
-function backToCross(sc) {
+function backToCross(sc, advance) {
   if (sc.allPressed && allPressed(sc)) return go(sc.allPressed);
-  showStatement();
+  advance ? nextStatement(sc) : showStatement();
 }
 
 function present(id) {
