@@ -267,10 +267,11 @@ function exec(a) {
     case "objection": {
       const o = $("objection"), b = $("burst");
       b.textContent = a.text;
-      /* [판결]은 네모 도장 (유죄 검정, 무죄 흰색). 도장이 찍히는 순간에 화면이 흔들려요 */
-      b.className = a.verdict ? "verdict-stamp " + a.verdict : "burst" + (a.style ? " " + a.style : "");
+      /* [판결]과 자물쇠 [해제]는 네모 도장 (유죄 검정, 무죄 흰색, 해제 노랑). 도장이 찍히는 순간에 화면이 흔들려요 */
+      const stamp = a.verdict || (a.style === "unlock" ? "unlock" : "");
+      b.className = stamp ? "verdict-stamp " + stamp : "burst" + (a.style ? " " + a.style : "");
       o.hidden = false;
-      if (a.verdict && !reduce) setTimeout(() => shake(document.querySelector(".stage")), 240);
+      if (stamp && !reduce) setTimeout(() => shake(document.querySelector(".stage")), 240);
       else shake(document.querySelector(".stage"));
       idleLine("");
       o.onclick = () => { o.hidden = true; step(); };

@@ -269,7 +269,7 @@ textarea.code:focus { outline: 2px solid var(--brass); outline-offset: 1px; }
   transform: rotate(-5deg); animation: slam .5s cubic-bezier(.2, 1.6, .4, 1);
   text-shadow: 3px 3px 0 var(--ink);
 }
-/* [판결] 도장: 네모 하나에 판결 문구. 유죄는 검정, 무죄는 흰색 */
+/* [판결]·[해제] 도장: 네모 하나에 문구. 유죄는 검정, 무죄는 흰색, 자물쇠 해제는 노랑 */
 .verdict-stamp {
   --size: clamp(96px, 26vw, 160px);
   min-width: calc(var(--size) * 1.9); height: var(--size); padding-inline: .45em; box-sizing: border-box;
@@ -280,6 +280,10 @@ textarea.code:focus { outline: 2px solid var(--brass); outline-offset: 1px; }
 .verdict-stamp.guilty {
   background: #0a0b0f; color: #f4efe2;
   box-shadow: inset 0 0 0 calc(var(--size) * .05) #0a0b0f, inset 0 0 0 calc(var(--size) * .075) #f4efe2, 0 0 0 3px var(--paper);
+}
+.verdict-stamp.unlock {
+  background: var(--brass); color: var(--ink);
+  box-shadow: inset 0 0 0 calc(var(--size) * .05) var(--brass), inset 0 0 0 calc(var(--size) * .075) var(--ink), 0 0 0 3px var(--ink), 0 0 0 5px var(--brass);
 }
 .verdict-stamp.notguilty {
   background: #f7f3ea; color: #0a0b0f;
@@ -323,7 +327,6 @@ textarea.code:focus { outline: 2px solid var(--brass); outline-offset: 1px; }
 .psyche-label { font-family: var(--f-mono); font-size: 11px; letter-spacing: .14em; color: var(--alarm); }
 .mini-lock { display: inline-block; width: 10px; height: 8px; background: var(--alarm); border-radius: 2px; position: relative; margin-top: 5px; }
 .mini-lock::before { content: ""; position: absolute; left: 2px; top: -5px; width: 6px; height: 6px; border: 2px solid var(--alarm); border-bottom: none; border-radius: 4px 4px 0 0; box-sizing: border-box; }
-.burst.unlock { background: var(--brass); color: var(--ink); text-shadow: none; }
 .ce-ctrl.two { grid-template-columns: 1fr auto; }
 @keyframes crack {
   0%, 40% { transform: translateX(0); }
