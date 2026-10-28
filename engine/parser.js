@@ -85,6 +85,8 @@ function parseStory(files) {
           (block.conds = block.conds || []).push({ val, at, from: block.lines.length });
         }
         if (block && BLOCK_KEYS.includes(key)) { block.settings[key] = { val, at }; return; }
+        /* 엔딩 장면의 [본문] (뒤에 아무것도 없이): 위는 카드 전에 나오는 대사, 아래는 카드 본문 */
+        if (!block && key === "본문" && !val) { target.push({ cmd: key, val, at }); return; }
         if (!block && (SCENE_KEYS.includes(key) || scene.name === "설정")) { scene.settings[key] = { val, at }; return; }
         target.push({ cmd: key, val, at }); return;
       }
@@ -300,11 +302,13 @@ function buildGame(files) {
     closeDemand();
     return out;
   };
+  const speech = text => text.match(/^([^\s:：]{1,12})\s*[:：]\s*(.*)$/);
+  const isSpeech = text => { const m = speech(text); return !!(m && m[1] in cast); };
   const compileOne = (it, out, ctx) => {
       if (it.text !== undefined) {
         starCheck(it.text, it.at);
         /* 콜론 앞이 등장인물 이름일 때만 대사. 아니면 콜론이 들어간 지문으로 봅니다. */
-        const m = it.text.match(/^([^\s:：]{1,12})\s*[:：]\s*(.*)$/);
+        const m = speech(it.text);
         if (m && m[1] in cast) { out.push([m[1], br(m[2])]); return; }
         const near = m && Object.keys(cast).find(n => oneOff(n, m[1]));
         if (near) err(it.at, `'${m[1]}'은(는) 등장인물에 없는 이름이에요. 혹시 '${near}'인가요? 지문이라면 무시해도 돼요.`);
@@ -361,7 +365,8 @@ function buildGame(files) {
         case "그림해제": out.push({ do: "unpic" }); break;
         case "흔들기": out.push({ do: "shake" }); break;
         case "외침": out.push({ do: "objection", text: v || "이의 있음!" }); break;
-        case "판결": out.push({ do: "objection", text: v || "유죄", verdict: true }); break;
+        /* [판결] 유죄 → 검은 도장, [판결] 무죄 → 흰 도장 */
+        case "판결": out.push({ do: "objection", text: v || "유죄", verdict: (v || "유죄").includes("무죄") ? "notguilty" : "guilty" }); break;
         case "해제": out.push({ do: "objection", text: v || "해제", style: "unlock" }); break;
         case "법정 시작": out.push({ do: "court" }); courtMarks.push({ scene: curScene, at, on: true }); break;
         case "법정 끝": out.push({ do: "court", on: false }); courtMarks.push({ scene: curScene, at, on: false }); break;
@@ -401,6 +406,7 @@ function buildGame(files) {
           if (!ctx.press) err(at, `[${cmd}]은(는) 증언 장면의 추궁 대사 안에서만 쓸 수 있어요.`);
           else out.push({ do: "reveal" });
           break;
+        case "본문": err(at, "[본문]은 엔딩 장면에서만, 선택지 밖에 쓸 수 있어요. 엔딩 카드 본문이 시작되는 자리예요."); break;
         default:
           if (VISIT_MARKERS[cmd]) err(at, `[${cmd}]은(는) 조사 장면의 ## 블록보다 위에 적어 주세요.`);
           else if (MARKERS[cmd] || BLOCK_KEYS.includes(cmd) || SCENE_KEYS.includes(cmd)) err(at, `[${cmd}]은(는) 여기에 쓸 수 없어요.`);
@@ -623,10 +629,26 @@ function buildGame(files) {
     }
 
     else if (type === "end") {
-      const body = br(val(s.settings, "본문") || s.lines.filter(x => x.text).map(x => x.text).join("\n"));
+      /* 카드 전에 나오는 대사와 카드 본문 나누기.
+         [본문] 한 줄이 있으면 그 위/아래로, 없으면 마지막 대사·명령 뒤의 지문이 본문이 돼요.
+         [본문] 문장 처럼 한 줄로 적으면 그 문장이 본문이고, 아래 줄들은 모두 대사로 나와요. */
+      const marks = s.lines.filter(x => x.cmd === "본문");
+      marks.slice(1).forEach(x => err(x.at, "[본문]은 엔딩 장면에 한 번만 적어 주세요."));
+      const oneLine = val(s.settings, "본문");
+      let cut = marks.length ? s.lines.indexOf(marks[0]) : s.lines.length;
+      if (!marks.length && !oneLine) while (cut > 0 && s.lines[cut - 1].text !== undefined && !isSpeech(s.lines[cut - 1].text)) cut--;
+      const tail = s.lines.slice(marks.length ? cut + 1 : cut);
+      tail.forEach(x => {
+        if (x.cmd) err(x.at, `[본문] 아래에는 지문만 쓸 수 있어요. [${x.cmd}]은(는) [본문] 위로 옮겨 주세요.`);
+        else if (isSpeech(x.text)) err(x.at, "카드 본문에는 지문만 쓸 수 있어요. 대사는 [본문] 위로 옮겨 주세요.");
+        else starCheck(x.text, x.at);
+      });
+      const body = br(oneLine || tail.filter(x => x.text).map(x => x.text).join("\n"));
+      const lines = compileLines(s.lines.slice(0, cut));
+      if (lines.some(l => l.do === "goto")) err(s.at, `'${s.name}'은(는) 엔딩이라 [이동]을 쓸 수 없어요. 대사가 끝나면 엔딩 카드가 떠요.`);
       const retry = val(s.settings, "다시 시작");
       if (retry) needScene(retry, s.settings["다시 시작"].at, "[다시 시작]");
-      scenes[s.name] = { type, title: val(s.settings, "제목") || s.name, body, retry };
+      scenes[s.name] = { type, title: val(s.settings, "제목") || s.name, body, retry, lines };
     }
     /* 이 장면에서 신뢰도가 0이 되면 갈 곳: 장면의 [게임오버] → 설정의 [게임오버] */
     if (scenes[s.name]) scenes[s.name].gameover = ownGameover || config.gameover;

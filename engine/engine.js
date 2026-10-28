@@ -267,8 +267,11 @@ function exec(a) {
     case "objection": {
       const o = $("objection"), b = $("burst");
       b.textContent = a.text;
-      b.className = "burst" + (a.verdict ? " verdict" : "") + (a.style ? " " + a.style : "");
-      o.hidden = false; shake(document.querySelector(".stage"));
+      /* [판결]은 네모 도장 (유죄 검정, 무죄 흰색). 도장이 찍히는 순간에 화면이 흔들려요 */
+      b.className = a.verdict ? "verdict-stamp " + a.verdict : "burst" + (a.style ? " " + a.style : "");
+      o.hidden = false;
+      if (a.verdict && !reduce) setTimeout(() => shake(document.querySelector(".stage")), 240);
+      else shake(document.querySelector(".stage"));
       idleLine("");
       o.onclick = () => { o.hidden = true; step(); };
       return;
@@ -356,7 +359,11 @@ function startScene(sc, id) {
     else open();
   }
   else if (sc.type === "testimony") startTestimony(sc);
-  else if (sc.type === "end") showEnd(sc);
+  else if (sc.type === "end") {
+    /* 엔딩: 대사가 있으면 먼저 보여 주고, 끝나면 엔딩 카드 */
+    if (sc.lines && sc.lines.length) run(sc.lines, () => showEnd(sc));
+    else showEnd(sc);
+  }
 }
 
 /* ---------- 탐정 파트 ---------- */
