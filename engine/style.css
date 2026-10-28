@@ -269,7 +269,22 @@ textarea.code:focus { outline: 2px solid var(--brass); outline-offset: 1px; }
   transform: rotate(-5deg); animation: slam .5s cubic-bezier(.2, 1.6, .4, 1);
   text-shadow: 3px 3px 0 var(--ink);
 }
-.burst.verdict { background: var(--panel-2); color: var(--alarm); text-shadow: none; }
+/* [판결] 도장: 네모 하나에 판결 문구. 유죄는 검정, 무죄는 흰색 */
+.verdict-stamp {
+  --size: clamp(96px, 26vw, 160px);
+  min-width: calc(var(--size) * 1.9); height: var(--size); padding-inline: .45em; box-sizing: border-box;
+  display: grid; place-items: center; white-space: nowrap;
+  font-family: var(--f-stamp); font-size: calc(var(--size) * .62); line-height: 1; letter-spacing: .04em;
+  border-radius: 4px; transform: rotate(-4deg); animation: thud .32s cubic-bezier(.2, 1.5, .45, 1);
+}
+.verdict-stamp.guilty {
+  background: #0a0b0f; color: #f4efe2;
+  box-shadow: inset 0 0 0 calc(var(--size) * .05) #0a0b0f, inset 0 0 0 calc(var(--size) * .075) #f4efe2, 0 0 0 3px var(--paper);
+}
+.verdict-stamp.notguilty {
+  background: #f7f3ea; color: #0a0b0f;
+  box-shadow: inset 0 0 0 calc(var(--size) * .05) #f7f3ea, inset 0 0 0 calc(var(--size) * .075) #0a0b0f, 0 0 0 3px var(--ink), 0 0 0 5px #f7f3ea;
+}
 
 .end { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 20px; display: grid; gap: 10px; }
 .end h2 { margin: 0; font-family: var(--f-display); font-weight: 800; font-size: 22px; text-wrap: balance; }
@@ -319,6 +334,7 @@ textarea.code:focus { outline: 2px solid var(--brass); outline-offset: 1px; }
 }
 
 @keyframes blink { 50% { opacity: 0; } }
+@keyframes thud { 0% { transform: rotate(-4deg) scale(2.4); opacity: 0; } 100% { transform: rotate(-4deg) scale(1); opacity: 1; } }
 @keyframes slam { 0% { transform: rotate(-5deg) scale(2.2); opacity: 0; } 100% { transform: rotate(-5deg) scale(1); opacity: 1; } }
 @keyframes hit { 0%, 100% { transform: translateX(0); } 20% { transform: translateX(-7px); } 40% { transform: translateX(6px); } 60% { transform: translateX(-4px); } 80% { transform: translateX(3px); } }
 @keyframes drop { from { transform: translate(-50%, -8px); opacity: 0; } }
