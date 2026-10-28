@@ -464,6 +464,8 @@ function updateLockLabel() {
 function startPsyche(topic) {
   const L = LOCKS[topic.lock];
   S.lock = { id: topic.lock, topic, step: 0, broken: 0 };
+  /* 실패해도 신뢰도는 회복되지 않아요. 0인 채로 다시 도전하면 한 칸만 가지고 시작해요 */
+  if (S.hp <= 0) S.hp = 1;
   renderHP();
   S.keepMid = true;
   renderLocks(L.steps.length, 0);
@@ -501,13 +503,13 @@ function psychePresent(id) {
   const near = (st.near || []).find(n => n.ids.includes(id));
   if (near) {
     run(near.lines, () => {
-      if (S.hp <= 0) run(L.fail.concat([{ do: "heal" }]), psycheExit);
+      if (S.hp <= 0) run(L.fail, psycheExit);
       else psycheAsk();
     });
     return;
   }
   run(L.wrong.concat([{ do: "hp", n: -1 }]), () => {
-    if (S.hp <= 0) run(L.fail.concat([{ do: "heal" }]), psycheExit);
+    if (S.hp <= 0) run(L.fail, psycheExit);
     else psycheAsk();
   });
 }
