@@ -243,6 +243,8 @@ function exec(a) {
       const prompt = a.prompt || [$("name").hidden ? "" : $("name").textContent, S.fullText];
       const rest = S.queue, done = S.onDone, keep = S.keepMid;
       S.queue = []; S.onDone = null;
+      /* 제시 직전 저장 지점: 남은 대사와 이어 갈 곳을 같이 적어 둬요 */
+      if (done && done.key) checkpoint({ at: "demand", action: { ...a, prompt }, rest, cont: done.key, keepMid: keep });
       S.idle = "demand";
       $("hint").hidden = true; $("dialog").classList.add("idle");
       const answer = id => {
@@ -303,6 +305,19 @@ function advance() {
   step();
 }
 
+/* ---------- 이어 갈 곳 ----------
+   대사가 끝난 뒤 갈 곳에 이름을 붙여 둬요. 제시 직전에 저장할 때 이 이름을 같이 적어 두면,
+   불러온 뒤에도 남은 대사가 끝나고 같은 곳으로 이어져요. 이름이 없는 곳에서는 바로 앞 저장 지점을 써요 */
+const CONT = {
+  next: () => { const sc = SCENES[S.scene]; sc.next ? go(sc.next) : toast("다음 장면이 정해져 있지 않아요."); },
+  end: () => showEnd(SCENES[S.scene]),
+  inv: tab => showInvestigate(tab),
+  cross: () => showStatement(),
+  press: () => afterPress(SCENES[S.scene])
+};
+function cont(key, arg) { const f = () => CONT[key](arg); f.key = [key, arg]; return f; }
+function contFn(k) { return Array.isArray(k) && CONT[k[0]] ? cont(k[0], k[1]) : null; }
+
 /* ---------- 장면 전환 ---------- */
 /* 메뉴에 보이는 항목들. [숨김] 항목은 [질문 추가]로 나타난 뒤에만 */
 function shownItems(sc, k) {
@@ -350,7 +365,7 @@ function chapterCard(title, done) {
 }
 
 function startScene(sc, id) {
-  if (sc.type === "dialog") run(sc.lines, () => sc.next ? go(sc.next) : toast("다음 장면이 정해져 있지 않아요."));
+  if (sc.type === "dialog") run(sc.lines, cont("next"));
   else if (sc.type === "investigate") {
     /* [처음 올 때] 대사는 첫 방문에만. 다 본 뒤에 '방문함'으로 기록해서, 도중에 껐다 켜면 다시 나와요 */
     const visitKey = id + ":@방문", first = !S.seen.has(visitKey);
@@ -362,7 +377,7 @@ function startScene(sc, id) {
   else if (sc.type === "testimony") startTestimony(sc);
   else if (sc.type === "end") {
     /* 엔딩: 대사가 있으면 먼저 보여 주고, 끝나면 엔딩 카드 */
-    if (sc.lines && sc.lines.length) run(sc.lines, () => showEnd(sc));
+    if (sc.lines && sc.lines.length) run(sc.lines, cont("end"));
     else showEnd(sc);
   }
 }
@@ -413,17 +428,17 @@ function showInvestigate(tab) {
         if (tab === "move") {
           /* 위에서부터 [조건]을 다 채운 첫 갈래로. 하나도 없으면 [조건 미달] */
           const br = it.branches.find(x => x.need.every(needMet));
-          run(br ? br.lines : it.needLines, () => showInvestigate("move"));
+          run(br ? br.lines : it.needLines, cont("inv", "move"));
           return;
         }
         if (locked) {
           S.pendingLock = it.lock;
-          run(LOCKS[it.lock].refuse, () => showInvestigate("talk"));
+          run(LOCKS[it.lock].refuse, cont("inv", "talk"));
           return;
         }
         const first = !S.seen.has(key);
         S.seen.add(key);
-        run(first || !it.again ? it.lines : it.again, () => showInvestigate(tab));
+        run(first || !it.again ? it.lines : it.again, cont("inv", tab));
       };
       list.appendChild(b);
     });
@@ -478,6 +493,8 @@ function psycheStep() {
 }
 
 function psycheAsk() {
+  const T = S.lock.topic;
+  checkpoint({ at: "psyche", lock: { id: S.lock.id, topic: T.id || T.label, step: S.lock.step, broken: S.lock.broken } });
   S.idle = "psyche";
   $("hint").hidden = true; $("dialog").classList.add("idle");
   const c = $("controls"); c.innerHTML = "";
@@ -544,7 +561,7 @@ function startTestimony(sc) {
   const vis = visibleStatements(sc);
   S.stmt = vis[0];
   const reading = vis.map(i => [sc.witness, sc.statements[i].text]);
-  run(sc.entry.concat(reading, sc.after || []), () => showStatement());
+  run(sc.entry.concat(reading, sc.after || []), cont("cross"));
   $("middle").innerHTML = `<div class="ce-banner"></div>`;
   $("middle").firstChild.textContent = `~ ${sc.title} ~`;
 }
@@ -558,11 +575,12 @@ function showStatement() {
   mid.querySelector(".ce-banner span").textContent = `~ ${sc.title} ~`;
   showLine(sc.witness, st.text, "stmt");
   $("hint").hidden = true; $("dialog").classList.add("idle");
+  checkpoint({ at: "cross" });
   const c = $("controls"); c.innerHTML = "";
   const box = document.createElement("div"); box.className = "ce-ctrl";
   const mk = (cls, label, fn) => { const b = document.createElement("button"); b.type = "button"; b.className = cls; b.textContent = label; b.onclick = fn; box.appendChild(b); };
   mk("prev", "◀", () => { S.stmt = vis[(pos - 1 + vis.length) % vis.length]; showStatement(); });
-  mk("press", "추궁한다", () => { S.revealNow = false; run(st.press || [[CONFIG.hero, "(더 물어볼 건 없을 것 같다.)"]], () => afterPress(sc)); });
+  mk("press", "추궁한다", () => { S.revealNow = false; run(st.press || [[CONFIG.hero, "(더 물어볼 건 없을 것 같다.)"]], cont("press")); });
   mk("present", "제시한다", () => openRecord(present));
   mk("next", "▶", () => nextStatement(sc));
   c.appendChild(box);
@@ -612,9 +630,9 @@ function backToCross(sc, advance) {
 function present(id) {
   const sc = SCENES[S.scene], st = sc.statements[S.stmt];
   const r = st.present[id];
-  if (r) return run(r, showStatement);
+  if (r) return run(r, cont("cross"));
   /* 신뢰도가 0이 되면 hp 명령이 게임오버로 보내요 */
-  run(sc.wrong.concat([{ do: "hp", n: -1 }]), showStatement);
+  run(sc.wrong.concat([{ do: "hp", n: -1 }]), cont("cross"));
 }
 
 /* ---------- 법정기록 ---------- */
@@ -864,11 +882,62 @@ function snapshot() {
   };
 }
 
-function checkpoint() {
+/* 자동 저장 지점. 장면에 들어갈 때·조사 메뉴로 돌아올 때 말고도, 제시하기 직전(증언 신문, [제시 요구], 사이코록)에도 저장해요.
+   그때는 resume 에 그 자리로 돌아올 정보를 적어요. 메뉴의 슬롯 저장도 이 지점을 그대로 써요 */
+function checkpoint(resume) {
   const sc = SCENES[S.scene];
-  if (!sc || sc.type === "end" || S.lock || S.gameover) return;
+  if (!sc || sc.type === "end" || S.gameover || (S.lock && !resume)) return;
   S.checkpoint = snapshot();
+  if (resume) S.checkpoint.resume = JSON.parse(JSON.stringify({
+    ...resume, sig: sceneSig(S.scene), line: [$("name").hidden ? "" : $("name").textContent, S.fullText],
+    stmt: S.stmt, revealed: [...S.revealed], pressed: [...S.pressed], revealNow: S.revealNow, pic: PIC.hidden ? null : PIC.dataset.src || null
+  }));
   store.set(KEY_AUTO(), S.checkpoint);
+}
+
+/* 장면 대본의 지문. 대본을 고친 뒤 불러오면 제시 직전 대신 그 장면 처음부터 시작해요 (남은 대사가 옛 대본일 수 있어서) */
+const SIGS = {};
+function sceneSig(id) {
+  if (SIGS[id]) return SIGS[id];
+  const sc = SCENES[id], locks = [];
+  JSON.stringify(sc, (k, v) => { if (k === "lock" && LOCKS[v]) locks.push(LOCKS[v]); return v; });
+  const t = JSON.stringify([sc, locks]);
+  let h = 0;
+  for (let i = 0; i < t.length; i++) h = (h * 31 + t.charCodeAt(i)) | 0;
+  return (SIGS[id] = h.toString(36));
+}
+
+/* 제시 직전 세이브로 그 자리에 돌아가요. 돌아갈 수 없으면 false (그러면 장면 처음부터) */
+function resumeAt(d) {
+  const r = d.resume, sc = SCENES[d.scene];
+  if (!r || d.ended || !sc || r.sig !== sceneSig(d.scene)) return false;
+  let topic;
+  if (r.at === "cross" && !(sc.type === "testimony" && sc.statements[r.stmt])) return false;
+  if (r.at === "demand" && !(r.action && Array.isArray(r.rest) && contFn(r.cont))) return false;
+  if (r.at === "psyche") {
+    topic = r.lock && LOCKS[r.lock.id] && (sc.talk || []).find(t => (t.id || t.label) === r.lock.topic);
+    if (!topic || !LOCKS[r.lock.id].steps[r.lock.step]) return false;
+  }
+  if (!["cross", "demand", "psyche"].includes(r.at)) return false;
+  S.scene = d.scene; S.keepMid = false; S.idle = null;
+  hidePic(); if (r.pic) showPic(r.pic);
+  $("middle").innerHTML = ""; $("controls").innerHTML = "";
+  if (sc.type === "testimony") { S.stmt = r.stmt; S.revealed = new Set(r.revealed || []); S.pressed = new Set(r.pressed || []); }
+  S.revealNow = !!r.revealNow;
+  if (r.at === "cross") { showStatement(); return true; }
+  if (r.line && r.line[1]) showLine(r.line[0], r.line[1]);
+  if (r.at === "demand") {
+    S.keepMid = !!r.keepMid; S.queue = r.rest; S.onDone = contFn(r.cont);
+    exec(r.action);
+    return true;
+  }
+  /* 사이코록 */
+  const L = LOCKS[r.lock.id];
+  S.lock = { id: r.lock.id, topic, step: r.lock.step, broken: r.lock.broken };
+  S.keepMid = true; renderHP();
+  renderLocks(L.steps.length, r.lock.broken);
+  psycheAsk();
+  return true;
 }
 
 /* 증거·인물의 설명과 이름을 원래대로 돌린 뒤, 세이브에 적힌 갱신/이름 변경을 다시 적용합니다 (원래 이름 = 목록의 키) */
@@ -897,7 +966,7 @@ function restore(d, msg = "불러왔다.") {
   });
   setPlace(d.time, d.loc); renderHP(); markRecord(); renderCards();
   S.scene = d.scene; S.checkpoint = d;
-  go(resumeTarget(d));
+  if (!resumeAt(d)) go(resumeTarget(d));
   toast(msg);
 }
 
