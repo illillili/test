@@ -707,16 +707,18 @@ function recordIds() {
 /* 법정기록에서 앞(-1)/뒤(+1) 항목으로 넘기기. 방향키와 ▲▼ 버튼이 같이 써요 */
 function stepRecord(d) {
   const ids = recordIds(), next = ids[ids.indexOf(S.recordSel) + d];
-  if (next) { S.recordSel = next; renderRecord(); }
+  if (next) pickRecord(next);
 }
 
+/* 사용자가 직접 고른 항목만 NEW를 지워요 (클릭, ↑↓). 열 때·탭 바꿀 때의 자동 선택은 NEW를 남겨 둬요 */
+function pickRecord(id) { S.recordSel = id; S.fresh.delete(id); renderRecord(); }
+
 /* 법정기록: 왼쪽 목록 + 오른쪽 설명. 창 크기는 고정이고, 목록과 설명이 각자 안에서 스크롤돼요.
-   열면 새로 얻은 항목(없으면 맨 위 항목)이 골라진 채로 시작해요. */
+   열면 맨 위 항목이 골라진 채로 시작하고, 새로 얻은 항목의 NEW는 직접 골라 볼 때까지 남아 있어요. */
 function renderRecord() {
   const R = $("record"), tab = S.recordTab;
   const ids = recordIds(), src = tab === "ev" ? EVIDENCE : PEOPLE;
-  if (!ids.includes(S.recordSel)) S.recordSel = ids.find(id => S.fresh.has(id)) || ids[0] || null;
-  if (S.recordSel) S.fresh.delete(S.recordSel);
+  if (!ids.includes(S.recordSel)) S.recordSel = ids[0] || null;
   const sel = S.recordSel && src[S.recordSel];
   const scroll = R.querySelector(".ledger-list")?.scrollTop || 0; /* 다시 그려도 목록 스크롤 위치는 그대로 */
   R.innerHTML = `
@@ -754,7 +756,7 @@ function renderRecord() {
     b.innerHTML = `<span class="no"></span><span class="nm"></span>${S.fresh.has(id) ? "<b>NEW</b>" : ""}`;
     b.querySelector(".no").textContent = it.no || "";
     b.querySelector(".nm").textContent = it.name;
-    b.onclick = () => { S.recordSel = id; renderRecord(); };
+    b.onclick = () => pickRecord(id);
     list.appendChild(b);
   });
   if (sel) {
