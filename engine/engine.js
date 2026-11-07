@@ -77,6 +77,7 @@ function setRich(el, text, n = Infinity) {
   }
 }
 
+const LATIN = /[A-Za-z\u00C0-\u024F]/;
 function showLine(who, text, cls) {
   const name = $("name"), box = $("text");
   if (who) {
@@ -89,10 +90,13 @@ function showLine(who, text, cls) {
   S.fullText = text;
   clearInterval(S.typeTimer);
   if (reduce) { setRich(box, text); S.typing = false; $("hint").hidden = !!S.idle; return; }
-  const len = richSegs(text).reduce((n, [s]) => n + s.length, 0);
+  const plain = richSegs(text).map(([s]) => s).join(""), len = plain.length;
   let i = 0; box.textContent = ""; S.typing = true;
   S.typeTimer = setInterval(() => {
-    i++; setRich(box, text, i);
+    /* 로마자는 한 글자씩이 아니라 단어 단위로 한 번에 */
+    if (LATIN.test(plain[i])) while (i < len && LATIN.test(plain[i])) i++;
+    else i++;
+    setRich(box, text, i);
     if (i >= len) { clearInterval(S.typeTimer); S.typing = false; $("hint").hidden = !!S.idle; }
   }, 26);
 }
