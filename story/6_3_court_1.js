@@ -60,7 +60,7 @@
 나루호도: 그 전에 한가지 여쭤볼 게 있습니다만….
 츠나요시: 잠깐만요. Fratellone.
 [흔들기]
-사사가와: !
+사사가와: …Sì?
 츠나요시: Mi dispiace. Avrei voluto dirtelo, ma….
 츠나요시: Quando sarà finito, forse capirai. O forse—
 나루호도: (이, 이탈리아어? 어쩐지 사사가와 씨 얼굴이 굳은 것 같은데.)
