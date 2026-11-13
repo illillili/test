@@ -655,10 +655,15 @@ function openDetail(dt, back) {
 }
 
 /* ---------- 그림 ([그림] / [그림 해제]) ----------
-   장소 표시와 대사창 사이에 그림을 띄워요. [그림 해제]를 만나거나 장면이 바뀌면 내려가요. */
+   장소 표시와 대사창 사이에 그림을 띄워요. [그림 해제]를 만나거나 장면이 바뀌면 내려가요.
+   증거 카드와 가운데 영역(증언 제목, 선택지 등)은 그림을 밀어내지 않고 그 위에 겹쳐 올라가요. */
+const STAGE_MID = document.createElement("div");
+STAGE_MID.className = "stage-mid";
+$("cards").before(STAGE_MID);
+STAGE_MID.append($("cards"), $("middle"));
 const PIC = document.createElement("div");
 PIC.className = "pic"; PIC.hidden = true;
-$("middle").before(PIC);
+STAGE_MID.prepend(PIC);
 
 function showPic(src) {
   PIC.classList.remove("out"); PIC.onanimationend = null;
@@ -667,11 +672,11 @@ function showPic(src) {
   const img = document.createElement("img"); img.src = src; img.alt = "";
   img.onerror = () => { const p = document.createElement("p"); p.className = "zoom-err"; p.textContent = `그림 파일 '${src}'을(를) 찾지 못했어요. story/img 폴더와 파일 이름을 확인해 주세요.`; img.replaceWith(p); };
   PIC.appendChild(img);
-  PIC.hidden = false;
+  PIC.hidden = false; STAGE_MID.classList.add("with-pic");
 }
 function hidePic(fade) {
   if (PIC.hidden) return;
-  const done = () => { PIC.hidden = true; PIC.classList.remove("out"); PIC.onanimationend = null; PIC.innerHTML = ""; delete PIC.dataset.src; };
+  const done = () => { PIC.hidden = true; STAGE_MID.classList.remove("with-pic"); PIC.classList.remove("out"); PIC.onanimationend = null; PIC.innerHTML = ""; delete PIC.dataset.src; };
   if (!fade || reduce) return done();
   PIC.classList.add("out"); PIC.onanimationend = done;
 }
